@@ -319,4 +319,50 @@ struct ConfigParserTests {
     #expect(key2 == true)
     #expect(key3 == 42)
   }
+
+  @Test func endToEnd() throws {
+    let expected = """
+    [DEFAULT]
+    ServerAliveInterval = 45
+    Compression = yes
+    CompressionLevel = 9
+    ForwardX11 = yes
+
+    [forge.example]
+    User = hg
+
+    [topsecret.server.example]
+    Port = 50022
+    ForwardX11 = no
+    """
+
+    let config = ConfigParser()
+    config.set(option: "ServerAliveInterval", value: 45)
+    config.set(option: "Compression", value: "yes")
+    config.set(option: "CompressionLevel", value: 9)
+    config.set(option: "ForwardX11", value: "yes")
+
+    try config.addSection("forge.example")
+    config.set(section: "forge.example", option: "User", value: "hg")
+
+    try config.addSection("topsecret.server.example")
+    config.set(section: "topsecret.server.example", option: "Port", value: 50022)
+    config.set(section: "topsecret.server.example", option: "ForwardX11", value: "no")
+
+    #expect(expected == config.write())
+    let config2 = ConfigParser()
+    try config2.read(expected)
+    #expect(config2.write() == config.write())
+
+    let expectedSections = ["DEFAULT", "forge.example", "topsecret.server.example"]
+    #expect(expectedSections == config.sections)
+
+    #expect(config.hasSection("forge.example"))
+    #expect(!config.hasSection("python.org"))
+    #expect(try config.get(section: "forge.example", option: "User") == "hg")
+    #expect(try config.get(option: "Compression") == "yes")
+
+    #expect(try config.get(section: "topsecret.server.example", option: "ForwardX11") == "no")
+    #expect(try config.get(section: "topsecret.server.example", option: "Port") == 50022)
+  }
 }

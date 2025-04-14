@@ -1,6 +1,6 @@
 # Winnie
 
-An [INI](https://en.wikipedia.org/wiki/INI_file) parsing library based on [ConfigParser](https://docs.python.org/3/library/configparser.html) for Swift. Currently supports the general featureset of ConfigParser.
+An [INI](https://en.wikipedia.org/wiki/INI_file) parsing library based on [ConfigParser](https://docs.python.org/3/library/configparser.html) for Swift. Currently supports the general featureset of ConfigParser except subscripting, interpolation, and proxies, which are non-goals for the time being.
 
 ## Roadmap
 

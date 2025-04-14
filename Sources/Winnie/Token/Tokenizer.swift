@@ -1,28 +1,4 @@
-public enum TokenizerError: Error, Equatable {
-  case unterminatedString(line: Int)
-  case syntax(line: Int, message: String)
-}
-
-public enum Token: CustomStringConvertible, Equatable {
-  case leftBracket, rightBracket, equals, hash, colon, semicolon, newline, eof
-  case string(String)
-
-  public var description: String {
-    return switch self {
-    case .equals: "="
-    case .leftBracket: "["
-    case .rightBracket: "]"
-    case .hash: "#"
-    case .colon: ":"
-    case .semicolon: ";"
-    case let .string(value): value
-    case .newline: "\n"
-    case .eof: "EOF"
-    }
-  }
-}
-
-public class Tokenizer {
+public final class Tokenizer {
   let input: String
   var line = 1
   var currentIndex: String.Index
@@ -38,14 +14,14 @@ public class Tokenizer {
       || current == "+" || current == "!" || current == " " || current == "*" || current == "\\" || current == "/"
   }
 
-  var tokens: [Token] = []
-
   init(_ input: String) {
     self.input = input
     currentIndex = self.input.startIndex
   }
 
   public func tokenize() throws(TokenizerError) -> [Token] {
+    var tokens: [Token] = []
+
     while true {
       let token = try scan()
       tokens.append(token)
