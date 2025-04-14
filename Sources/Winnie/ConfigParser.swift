@@ -225,15 +225,9 @@ public class ConfigParser {
           index = tokens.index(after: index)
           guard index < tokens.endIndex else { break }
 
-          if case let .string(value) = tokens[index] {
-            set(section: currentSection, option: option, value: INIValue(from: value))
-          }
-
-          guard index < tokens.endIndex else { break }
-
-          if case .string = tokens[index] {
-            index = tokens.index(after: index)
-          }
+          let value: String = if case let .string(string) = tokens[index] { string } else { "" }
+          index = tokens.index(after: index)
+          set(section: currentSection, option: option, value: value)
         }
 
       default:

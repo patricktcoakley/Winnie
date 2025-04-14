@@ -4,7 +4,7 @@ public enum TokenizerError: Error, Equatable {
 }
 
 public enum Token: CustomStringConvertible, Equatable {
-  case leftBracket, rightBracket, equals, hash, colon, semicolon, eof
+  case leftBracket, rightBracket, equals, hash, colon, semicolon, newline, eof
   case string(String)
 
   public var description: String {
@@ -16,6 +16,7 @@ public enum Token: CustomStringConvertible, Equatable {
     case .colon: ":"
     case .semicolon: ";"
     case let .string(value): value
+    case .newline: "\n"
     case .eof: "EOF"
     }
   }
@@ -37,13 +38,14 @@ public class Tokenizer {
       current == "+" || current == "!" || current == " "
   }
 
+  var tokens: [Token] = []
+
   init(_ input: String) {
     self.input = input
     currentIndex = self.input.startIndex
   }
 
   public func tokenize() throws(TokenizerError) -> [Token] {
-    var tokens: [Token] = []
     while true {
       let token = try scan()
       tokens.append(token)
@@ -73,6 +75,9 @@ public class Tokenizer {
     case "\"":
       return try handleQuotedString()
     case "#", ";": return handleComment()
+    case "\n":
+      advance()
+      return .newline
     default: return handleString()
     }
   }
@@ -83,7 +88,7 @@ public class Tokenizer {
   }
 
   private func skipWhitespace() {
-    while currentIndex < input.endIndex, current.isWhitespace {
+    while currentIndex < input.endIndex, !current.isNewline, current.isWhitespace {
       advance()
     }
   }
@@ -129,7 +134,7 @@ public class Tokenizer {
     var stringValue = ""
 
     while currentIndex < input.endIndex {
-      if !isSupportedCharacter {
+      if !isSupportedCharacter || current == "\n" {
         return .string(stringValue.trimmingCharacters(in: .whitespaces))
       }
 

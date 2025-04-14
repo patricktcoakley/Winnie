@@ -103,6 +103,7 @@ struct TokenizerTests {
 
     let expected: [Token] = [
       .leftBracket, .string("section1"), .rightBracket,
+      .newline,
       .leftBracket, .string("section2"), .rightBracket,
       .eof
     ]
@@ -129,23 +130,20 @@ struct TokenizerTests {
     """#
 
     let expected: [Token] = [
-      .string("# Global settings"),
-
-      .leftBracket, .string("general"), .rightBracket,
-      .string("app_name"), .equals, .string("TestApp"),
-      .string("version"), .equals, .string("1.0.0"),
-      .string("debug"), .equals, .string("true"),
-
-      .string("; User config"),
-
-      .leftBracket, .string("user"), .rightBracket,
-      .string("name"), .equals, .string("Jane Doe"),
-      .string("email"), .equals, .string("jane@example.com"),
-
-      .leftBracket, .string("network"), .rightBracket,
-      .string("host"), .equals, .string("localhost"),
+      .string("# Global settings"), .newline,
+      .leftBracket, .string("general"), .rightBracket, .newline,
+      .string("app_name"), .equals, .string("TestApp"), .newline,
+      .string("version"), .equals, .string("1.0.0"), .newline,
+      .string("debug"), .equals, .string("true"), .newline,
+      .newline,
+      .string("; User config"), .newline,
+      .leftBracket, .string("user"), .rightBracket, .newline,
+      .string("name"), .equals, .string("Jane Doe"), .newline,
+      .string("email"), .equals, .string("jane@example.com"), .newline,
+      .newline,
+      .leftBracket, .string("network"), .rightBracket, .newline,
+      .string("host"), .equals, .string("localhost"), .newline,
       .string("port"), .equals, .string("8080"),
-
       .eof
     ]
 
@@ -163,14 +161,60 @@ struct TokenizerTests {
     """
 
     let expected: [Token] = [
-      .leftBracket, .string("URL"), .rightBracket,
-      .string("Protocol"), .equals, .string("deusex"),
-      .string("Host"), .equals, .string(""),
+      .leftBracket, .string("URL"), .rightBracket, .newline,
+      .string("Protocol"), .equals, .string("deusex"), .newline,
+      .string("Host"), .equals,
       .eof
     ]
 
     let tokenizer = Tokenizer(contents)
     let tokens = try tokenizer.tokenize()
+    #expect(tokens == expected)
+  }
+
+  @Test func testNewlineCharacters() throws {
+    let input = """
+    key1 = value1
+
+    key2 = value2
+    """
+
+    let tokenizer = Tokenizer(input)
+    let tokens = try tokenizer.tokenize()
+
+    let expected: [Token] = [
+      .string("key1"), .equals, .string("value1"),
+      .newline,
+      .newline,
+      .string("key2"), .equals, .string("value2"),
+      .eof
+    ]
+
+    #expect(tokens == expected)
+  }
+
+  @Test func testMixedContent() throws {
+    let input = """
+    [section1]
+    key1 = value1
+
+    # Comment
+    [section2]
+    key2 = value2
+    """
+
+    let tokenizer = Tokenizer(input)
+    let tokens = try tokenizer.tokenize()
+
+    let expected: [Token] = [
+      .leftBracket, .string("section1"), .rightBracket, .newline,
+      .string("key1"), .equals, .string("value1"), .newline,
+      .newline,
+      .string("# Comment"), .newline,
+      .leftBracket, .string("section2"), .rightBracket, .newline,
+      .string("key2"), .equals, .string("value2"), .eof
+    ]
+
     #expect(tokens == expected)
   }
 }
