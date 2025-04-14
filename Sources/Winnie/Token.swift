@@ -34,8 +34,8 @@ public class Tokenizer {
   }
 
   var isSupportedCharacter: Bool {
-    current.isLetter || current.isNumber || current == "_" || current == "-" || current == "." ||
-      current == "+" || current == "!" || current == " "
+    current.isLetter || current.isNumber || current == "_" || current == "-" || current == "."
+      || current == "+" || current == "!" || current == " " || current == "*" || current == "\\" || current == "/"
   }
 
   var tokens: [Token] = []

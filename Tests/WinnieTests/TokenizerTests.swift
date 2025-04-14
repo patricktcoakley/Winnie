@@ -74,9 +74,14 @@ struct TokenizerTests {
   }
 
   @Test func testKeyWithSpecialCharacters() throws {
-    let tokenizer = Tokenizer("key-with_special.chars = value")
-    let key = try tokenizer.scan()
-    #expect(key == .string("key-with_special.chars"))
+    let tokenizer = Tokenizer(#"Paths=..\System\*.u"#)
+    let tokens = try tokenizer.tokenize()
+
+    let expected: [Token] = [
+      .string("Paths"), .equals, .string("..\\System\\*.u"), .eof
+    ]
+
+    #expect(tokens == expected)
   }
 
   @Test func testMissingValueAfterEquals() throws {
@@ -200,7 +205,7 @@ struct TokenizerTests {
 
     # Comment
     [section2]
-    key2 = value2
+    key2:value2
     """
 
     let tokenizer = Tokenizer(input)
@@ -212,7 +217,7 @@ struct TokenizerTests {
       .newline,
       .string("# Comment"), .newline,
       .leftBracket, .string("section2"), .rightBracket, .newline,
-      .string("key2"), .equals, .string("value2"), .eof
+      .string("key2"), .colon, .string("value2"), .eof
     ]
 
     #expect(tokens == expected)
