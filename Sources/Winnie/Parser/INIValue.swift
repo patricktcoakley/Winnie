@@ -1,4 +1,4 @@
-public enum INIValue: CustomStringConvertible, INIValueConvertible {
+public enum INIValue: CustomStringConvertible, Equatable, INIValueConvertible {
   case string(String)
   case int(Int)
   case double(Double)
@@ -28,7 +28,7 @@ public enum INIValue: CustomStringConvertible, INIValueConvertible {
   }
 
   public var description: String {
-    return switch self {
+    switch self {
     case let .string(value): value
     case let .int(value): String(value)
     case let .double(value): String(value)
@@ -38,4 +38,20 @@ public enum INIValue: CustomStringConvertible, INIValueConvertible {
 
   public func into() -> INIValue { self }
   public static func from(_ value: INIValue) throws(ConfigParserError) -> Self { value }
+}
+
+extension INIValue: ExpressibleByStringLiteral {
+  public init(stringLiteral value: String) { self = .string(value) }
+}
+
+extension INIValue: ExpressibleByIntegerLiteral {
+  public init(integerLiteral value: Int) { self = .int(value) }
+}
+
+extension INIValue: ExpressibleByBooleanLiteral {
+  public init(booleanLiteral value: Bool) { self = .string(value ? "True" : "False") }
+}
+
+extension INIValue: ExpressibleByFloatLiteral {
+  public init(floatLiteral value: Double) { self = .double(value) }
 }

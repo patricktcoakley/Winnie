@@ -7,7 +7,7 @@ extension String: INIValueConvertible {
   public func into() -> INIValue { .string(self) }
 
   public static func from(_ value: INIValue) throws(ConfigParserError) -> String {
-    return switch value {
+    switch value {
     case let .string(string): string
     default: value.description
     }
@@ -18,7 +18,7 @@ extension Bool: INIValueConvertible {
   public func into() -> INIValue { .bool(self) }
 
   public static func from(_ value: INIValue) throws(ConfigParserError) -> Bool {
-    return switch value {
+    switch value {
     case let .bool(bool): bool
     case let .string(string):
       switch string.lowercased() {

@@ -10,14 +10,62 @@ public enum AssignmentCharacter: String {
 }
 
 public final class ConfigParser {
-  private(set) var config: Config = [:]
+  var config: Config = [:]
   private static let DEFAULT_SECTION = "DEFAULT"
 
   public init() {
     config[Self.DEFAULT_SECTION] = [:]
   }
 
-  public var sections: [String] { Array(config.keys) }
+  public var sections: SectionProxySequence { SectionProxySequence(parser: self) }
+  public var sectionNames: [String] { Array(config.keys) }
+
+  public subscript(section: String) -> SectionProxy? {
+    guard config[section] != nil else { return nil }
+    return SectionProxy(section: section, parser: self)
+  }
+
+  public subscript(option: String) -> INIValue? {
+    get {
+      config[Self.DEFAULT_SECTION]?[option]
+    }
+    set {
+      if config[Self.DEFAULT_SECTION] == nil {
+        config[Self.DEFAULT_SECTION] = [:]
+      }
+
+      if let newValue {
+        config[Self.DEFAULT_SECTION]?[option] = newValue
+        return
+      }
+
+      config[Self.DEFAULT_SECTION]?.removeValue(forKey: option)
+    }
+  }
+
+  public subscript(section: String, option: String) -> INIValue? {
+    get {
+      if let sectionValue = config[section]?[option] {
+        return sectionValue
+      }
+      if section != Self.DEFAULT_SECTION {
+        return config[Self.DEFAULT_SECTION]?[option]
+      }
+      return nil
+    }
+    set {
+      if config[section] == nil {
+        config[section] = [:]
+      }
+
+      if let newValue {
+        config[section]?[option] = newValue
+        return
+      }
+
+      config[section]?.removeValue(forKey: option)
+    }
+  }
 
   public func items(section: String) throws(ConfigParserError) -> any MutableCollection {
     if let values = config[section] {
@@ -27,7 +75,9 @@ public final class ConfigParser {
     throw .sectionNotFound(section)
   }
 
-  public func get<T: INIValueConvertible>(section: String, option: String) throws(ConfigParserError) -> T {
+  public func get<T: INIValueConvertible>(section: String, option: String) throws(ConfigParserError)
+    -> T
+  {
     if let section = config[section] {
       guard let value = section[option] else { throw .optionNotFound(option) }
       return try T.from(value)
@@ -37,27 +87,27 @@ public final class ConfigParser {
   }
 
   public func get<T: INIValueConvertible>(option: String) throws(ConfigParserError) -> T {
-    return try get(section: Self.DEFAULT_SECTION, option: option)
+    try get(section: Self.DEFAULT_SECTION, option: option)
   }
 
   public func get<T: INIValueConvertible>(section: String, option: String, default defaultValue: T) -> T {
-    return (try? get(section: section, option: option)) ?? defaultValue
+    (try? get(section: section, option: option)) ?? defaultValue
   }
 
   public func get<T: INIValueConvertible>(option: String, default defaultValue: T) -> T {
-    return get(section: Self.DEFAULT_SECTION, option: option, default: defaultValue)
+    get(section: Self.DEFAULT_SECTION, option: option, default: defaultValue)
   }
 
-  public func set<T: INIValueConvertible>(section: String, option: String, value: T) {
+  public func set(section: String, option: String, value: some INIValueConvertible) throws(ConfigParserError) {
     if config[section] == nil {
-      config[section] = [:]
+      throw ConfigParserError.sectionNotFound(section)
     }
 
-    config[section]?[option] = value.into()
+    config[section]![option] = value.into()
   }
 
-  public func set<T: INIValueConvertible>(option: String, value: T) {
-    set(section: Self.DEFAULT_SECTION, option: option, value: value)
+  public func set(option: String, value: some INIValueConvertible) throws(ConfigParserError) {
+    try set(section: Self.DEFAULT_SECTION, option: option, value: value)
   }
 
   public func addSection(_ section: String) throws(ConfigParserError) {
@@ -80,7 +130,7 @@ public final class ConfigParser {
     config.removeValue(forKey: section)
   }
 
-  public func hasSection(_ section: String) -> Bool { return config[section] != nil }
+  public func hasSection(_ section: String) -> Bool { config[section] != nil }
 
   public func readFile(_ path: String) throws {
     let contents = try String(contentsOfFile: path)
@@ -128,7 +178,7 @@ public final class ConfigParser {
 
           let value: String = if case let .string(string) = tokens[index] { string } else { "" }
           index = tokens.index(after: index)
-          set(section: currentSection, option: option, value: value)
+          try set(section: currentSection, option: option, value: value)
         }
 
       default:
@@ -154,7 +204,7 @@ public final class ConfigParser {
       output += "\n"
     }
 
-    for section in sections where section != Self.DEFAULT_SECTION {
+    for section in sectionNames where section != Self.DEFAULT_SECTION {
       output += "[\(section)]\n"
 
       if let sectionData = config[section] {

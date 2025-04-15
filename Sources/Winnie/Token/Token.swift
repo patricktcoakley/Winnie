@@ -4,7 +4,7 @@ public enum Token: CustomStringConvertible, Equatable {
   case comment(String)
 
   public var description: String {
-    return switch self {
+    switch self {
     // Reserved for future use
     case .plus: "+"
     case .bang: "!"

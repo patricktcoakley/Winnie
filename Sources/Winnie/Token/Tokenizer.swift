@@ -82,7 +82,7 @@ public final class Tokenizer {
     while currentIndex < input.endIndex {
       let char = current
 
-      if char == "\"" {  // End quote
+      if char == "\"" { // End quote
         advance()
         return .string(stringValue)
       }
@@ -116,13 +116,13 @@ public final class Tokenizer {
 
     while currentIndex < input.endIndex {
       if !isSupportedCharacter || current == "\n" {
-        let value = input[start..<currentIndex]
+        let value = input[start ..< currentIndex]
         return .string(String(value).trimmingCharacters(in: .whitespaces))
       }
       advance()
     }
 
-    let value = input[start..<currentIndex]
+    let value = input[start ..< currentIndex]
     return .string(String(value).trimmingCharacters(in: .whitespaces))
   }
 
@@ -134,7 +134,7 @@ public final class Tokenizer {
       advance()
     }
 
-    let value = input[start..<currentIndex]
+    let value = input[start ..< currentIndex]
 
     return .comment(String(value).trimmingCharacters(in: .whitespaces))
   }

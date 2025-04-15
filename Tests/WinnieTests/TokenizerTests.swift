@@ -78,7 +78,7 @@ struct TokenizerTests {
     let tokens = try tokenizer.tokenize()
 
     let expected: [Token] = [
-      .string("Paths"), .equals, .string("..\\System\\*.u"), .eof
+      .string("Paths"), .equals, .string("..\\System\\*.u"), .eof,
     ]
 
     #expect(tokens == expected)
@@ -110,7 +110,7 @@ struct TokenizerTests {
       .leftBracket, .string("section1"), .rightBracket,
       .newline,
       .leftBracket, .string("section2"), .rightBracket,
-      .eof
+      .eof,
     ]
 
     #expect(tokens == expected)
@@ -149,7 +149,7 @@ struct TokenizerTests {
       .leftBracket, .string("network"), .rightBracket, .newline,
       .string("host"), .equals, .string("localhost"), .newline,
       .string("port"), .equals, .string("8080"),
-      .eof
+      .eof,
     ]
 
     let tokenizer = Tokenizer(input)
@@ -169,7 +169,7 @@ struct TokenizerTests {
       .leftBracket, .string("URL"), .rightBracket, .newline,
       .string("Protocol"), .equals, .string("deusex"), .newline,
       .string("Host"), .equals,
-      .eof
+      .eof,
     ]
 
     let tokenizer = Tokenizer(contents)
@@ -192,7 +192,7 @@ struct TokenizerTests {
       .newline,
       .newline,
       .string("key2"), .equals, .string("value2"),
-      .eof
+      .eof,
     ]
 
     #expect(tokens == expected)
@@ -217,7 +217,7 @@ struct TokenizerTests {
       .newline,
       .comment("# Comment"), .newline,
       .leftBracket, .string("section2"), .rightBracket, .newline,
-      .string("key2"), .colon, .string("value2"), .eof
+      .string("key2"), .colon, .string("value2"), .eof,
     ]
 
     #expect(tokens == expected)
