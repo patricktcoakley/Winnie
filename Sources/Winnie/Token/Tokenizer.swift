@@ -3,15 +3,10 @@ public final class Tokenizer {
   var line = 1
   var currentIndex: String.Index
   var current: Character { input[currentIndex] }
-  var peekIndex: String.Index { input.index(after: currentIndex) }
-  var peek: Character? {
-    let next = input.index(after: currentIndex)
-    return next < input.endIndex ? input[next] : nil
-  }
 
   var isSupportedCharacter: Bool {
     current.isLetter || current.isNumber || current == "_" || current == "-" || current == "."
-      || current == "+" || current == "!" || current == " " || current == "*" || current == "\\" || current == "/"
+      || current == " " || current == "*" || current == "/" || current == "\\"
   }
 
   init(_ input: String) {
@@ -48,13 +43,23 @@ public final class Tokenizer {
     case ":":
       advance()
       return .colon
+    case "+":
+      advance()
+      return .plus
+    case "!":
+      advance()
+      return .bang
     case "\"":
       return try handleQuotedString()
     case "#", ";": return handleComment()
     case "\n":
       advance()
       return .newline
-    default: return handleString()
+    default:
+      guard isSupportedCharacter else {
+        throw TokenizerError.syntax(line: line, message: "Unexpected character: \(current)")
+      }
+      return handleString()
     }
   }
 
@@ -64,7 +69,7 @@ public final class Tokenizer {
   }
 
   private func skipWhitespace() {
-    while currentIndex < input.endIndex, !current.isNewline, current.isWhitespace {
+    while currentIndex < input.endIndex, current.isWhitespace, !current.isNewline {
       advance()
     }
   }
@@ -77,7 +82,7 @@ public final class Tokenizer {
     while currentIndex < input.endIndex {
       let char = current
 
-      if char == "\"" { // End quote
+      if char == "\"" {  // End quote
         advance()
         return .string(stringValue)
       }
@@ -107,29 +112,30 @@ public final class Tokenizer {
   }
 
   private func handleString() -> Token {
-    var stringValue = ""
+    let start = currentIndex
 
     while currentIndex < input.endIndex {
       if !isSupportedCharacter || current == "\n" {
-        return .string(stringValue.trimmingCharacters(in: .whitespaces))
+        let value = input[start..<currentIndex]
+        return .string(String(value).trimmingCharacters(in: .whitespaces))
       }
-
-      stringValue.append(current)
       advance()
     }
 
-    return .string(stringValue)
+    let value = input[start..<currentIndex]
+    return .string(String(value).trimmingCharacters(in: .whitespaces))
   }
 
   private func handleComment() -> Token {
-    var stringValue = String(current)
+    let start = currentIndex
     advance()
 
-    while currentIndex < input.endIndex && current != "\n" {
-      stringValue.append(current)
+    while currentIndex < input.endIndex, current != "\n" {
       advance()
     }
 
-    return .string(stringValue)
+    let value = input[start..<currentIndex]
+
+    return .comment(String(value).trimmingCharacters(in: .whitespaces))
   }
 }

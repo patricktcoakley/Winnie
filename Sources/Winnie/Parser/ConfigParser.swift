@@ -40,8 +40,12 @@ public final class ConfigParser {
     return try get(section: Self.DEFAULT_SECTION, option: option)
   }
 
-  public func get<T: INIValueConvertible>(option: String, default defaultValue: T) throws(ConfigParserError) -> T {
-    return (try? get(option: option)) ?? defaultValue
+  public func get<T: INIValueConvertible>(section: String, option: String, default defaultValue: T) -> T {
+    return (try? get(section: section, option: option)) ?? defaultValue
+  }
+
+  public func get<T: INIValueConvertible>(option: String, default defaultValue: T) -> T {
+    return get(section: Self.DEFAULT_SECTION, option: option, default: defaultValue)
   }
 
   public func set<T: INIValueConvertible>(section: String, option: String, value: T) {
@@ -57,15 +61,21 @@ public final class ConfigParser {
   }
 
   public func addSection(_ section: String) throws(ConfigParserError) {
-    guard section != Self.DEFAULT_SECTION else { throw ConfigParserError.valueError("Cannot add default section.") }
+    guard section != Self.DEFAULT_SECTION else {
+      throw ConfigParserError.valueError("Cannot add default section.")
+    }
 
-    guard config[section] == nil else { throw ConfigParserError.valueError("Section \(section) already exists.") }
+    guard config[section] == nil else {
+      throw ConfigParserError.valueError("Section \(section) already exists.")
+    }
 
     config[section] = [:]
   }
 
   public func removeSection(_ section: String) throws(ConfigParserError) {
-    guard section != Self.DEFAULT_SECTION else { throw ConfigParserError.valueError("Cannot remove default section.") }
+    guard section != Self.DEFAULT_SECTION else {
+      throw ConfigParserError.valueError("Cannot remove default section.")
+    }
 
     config.removeValue(forKey: section)
   }

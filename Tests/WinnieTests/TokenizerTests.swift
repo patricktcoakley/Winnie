@@ -53,13 +53,13 @@ struct TokenizerTests {
   @Test func testCommentWithHash() throws {
     let tokenizer = Tokenizer("# this is a comment")
     let token = try tokenizer.scan()
-    #expect(token == .string("# this is a comment"))
+    #expect(token == .comment("# this is a comment"))
   }
 
   @Test func testCommentWithSemicolon() throws {
     let tokenizer = Tokenizer("; this is a comment")
     let token = try tokenizer.scan()
-    #expect(token == .string("; this is a comment"))
+    #expect(token == .comment("; this is a comment"))
   }
 
   @Test func testSectionHeader() throws {
@@ -135,13 +135,13 @@ struct TokenizerTests {
     """#
 
     let expected: [Token] = [
-      .string("# Global settings"), .newline,
+      .comment("# Global settings"), .newline,
       .leftBracket, .string("general"), .rightBracket, .newline,
       .string("app_name"), .equals, .string("TestApp"), .newline,
       .string("version"), .equals, .string("1.0.0"), .newline,
       .string("debug"), .equals, .string("true"), .newline,
       .newline,
-      .string("; User config"), .newline,
+      .comment("; User config"), .newline,
       .leftBracket, .string("user"), .rightBracket, .newline,
       .string("name"), .equals, .string("Jane Doe"), .newline,
       .string("email"), .equals, .string("jane@example.com"), .newline,
@@ -215,7 +215,7 @@ struct TokenizerTests {
       .leftBracket, .string("section1"), .rightBracket, .newline,
       .string("key1"), .equals, .string("value1"), .newline,
       .newline,
-      .string("# Comment"), .newline,
+      .comment("# Comment"), .newline,
       .leftBracket, .string("section2"), .rightBracket, .newline,
       .string("key2"), .colon, .string("value2"), .eof
     ]

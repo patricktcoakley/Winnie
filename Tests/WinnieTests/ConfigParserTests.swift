@@ -1,4 +1,5 @@
 import Testing
+
 @testable import Winnie
 
 struct ConfigParserTests {
@@ -31,11 +32,14 @@ struct ConfigParserTests {
   }
 
   @Test func testSetAndGetString() throws {
-    let parser = ConfigParser()
-    parser.set(section: "user", option: "name", value: "John")
+    let config = ConfigParser()
+    config.set(section: "user", option: "name", value: "John")
 
-    let name: String = try parser.get(section: "user", option: "name")
+    let name: String = try config.get(section: "user", option: "name")
     #expect(name == "John")
+
+    let age: Int = config.get(section: "user", option: "age", default: 10)
+    #expect(age == 10)
   }
 
   @Test func testSetAndGetInt() throws {
@@ -125,22 +129,22 @@ struct ConfigParserTests {
 
   @Test func readExample() throws {
     let contents = """
-    [URL]
-    Protocol=deusex
-    ProtocolDescription=Deus Ex Protocol
-    Name=Player
-    Map=Index.dx
-    LocalMap=DX.dx
-    Host=
-    Portal=
-    MapExt=dx 
-    SaveExt=dxs
-    Port=7790
-    Class=DeusEx.JCDentonMale       
+      [URL]
+      Protocol=deusex
+      ProtocolDescription=Deus Ex Protocol
+      Name=Player
+      Map=Index.dx
+      LocalMap=DX.dx
+      Host=
+      Portal=
+      MapExt=dx 
+      SaveExt=dxs
+      Port=7790
+      Class=DeusEx.JCDentonMale       
 
-    [Engine.GameInfo]
-    bLowGore=False
-    """
+      [Engine.GameInfo]
+      bLowGore=False
+      """
 
     let configParser = ConfigParser()
     try configParser.read(contents)
@@ -149,7 +153,8 @@ struct ConfigParserTests {
     #expect(try configParser.get(section: "URL", option: "Portal") == "")
     #expect(try configParser.get(section: "URL", option: "Name") == "Player")
     #expect(try configParser.get(section: "URL", option: "Port") == 7790)
-    #expect(try configParser.get(section: "URL", option: "ProtocolDescription") == "Deus Ex Protocol")
+    #expect(
+      try configParser.get(section: "URL", option: "ProtocolDescription") == "Deus Ex Protocol")
     #expect(try configParser.get(section: "URL", option: "Class") == "DeusEx.JCDentonMale")
     #expect(try configParser.get(section: "Engine.GameInfo", option: "bLowGore") == false)
   }
@@ -168,32 +173,32 @@ struct ConfigParserTests {
     let result = configParser.write(leadingSpaces: false)
 
     let expected = """
-    [URL]
-    Protocol=deusex
-    Name=Player
-    Port=7790
+      [URL]
+      Protocol=deusex
+      Name=Player
+      Port=7790
 
-    [Engine.GameInfo]
-    bLowGore=False
-    """
+      [Engine.GameInfo]
+      bLowGore=False
+      """
 
     #expect(result == expected)
   }
 
   @Test func testMixedAssignmentStyles() throws {
     let input = """
-    [Settings]
-    useColor=true
-    fontSize: 12
-    theme = "dark"
-    """
+      [Settings]
+      useColor=true
+      fontSize: 12
+      theme = "dark"
+      """
 
-    let parser = ConfigParser()
-    try parser.read(input)
+    let config = ConfigParser()
+    try config.read(input)
 
-    let useColor: Bool = try parser.get(section: "Settings", option: "useColor")
-    let fontSize: Int = try parser.get(section: "Settings", option: "fontSize")
-    let theme: String = try parser.get(section: "Settings", option: "theme")
+    let useColor: Bool = try config.get(section: "Settings", option: "useColor")
+    let fontSize: Int = try config.get(section: "Settings", option: "fontSize")
+    let theme: String = try config.get(section: "Settings", option: "theme")
 
     #expect(useColor == true)
     #expect(fontSize == 12)
@@ -202,11 +207,12 @@ struct ConfigParserTests {
 
   @Test func testMultilineValues() throws {
     let parser = ConfigParser()
-    try parser.read("""
-    [Content]
-    description = "This is a\\nmultiline\\nvalue"
-    sql = "SELECT * FROM users\\nWHERE active = 1;"
-    """)
+    try parser.read(
+      """
+      [Content]
+      description = "This is a\\nmultiline\\nvalue"
+      sql = "SELECT * FROM users\\nWHERE active = 1;"
+      """)
 
     let description: String = try parser.get(section: "Content", option: "description")
     #expect(description == "This is a\nmultiline\nvalue")
@@ -238,17 +244,17 @@ struct ConfigParserTests {
 
   @Test func testEmptySections() throws {
     let input = """
-    [EmptySection]
+      [EmptySection]
 
-    [Section]
-    emptyValue=
-    """
+      [Section]
+      emptyValue=
+      """
 
-    let parser = ConfigParser()
-    try parser.read(input)
+    let config = ConfigParser()
+    try config.read(input)
 
-    #expect(parser.hasSection("EmptySection"))
-    let emptyValue: String = try parser.get(section: "Section", option: "emptyValue")
+    #expect(config.hasSection("EmptySection"))
+    let emptyValue: String = try config.get(section: "Section", option: "emptyValue")
     #expect(emptyValue == "")
   }
 
@@ -276,18 +282,18 @@ struct ConfigParserTests {
 
   @Test func testCommentHandling() throws {
     let input = """
-    [Section]
-    # This is a comment
-    key1=value1 ; This is an inline comment
-    ; Another comment
-    key2=value2
-    """
+      [Section]
+      # This is a comment
+      key1=value1 ; This is an inline comment
+      ; Another comment
+      key2=value2
+      """
 
-    let parser = ConfigParser()
-    try parser.read(input)
+    let config = ConfigParser()
+    try config.read(input)
 
-    let key1: String = try parser.get(section: "Section", option: "key1")
-    let key2: String = try parser.get(section: "Section", option: "key2")
+    let key1: String = try config.get(section: "Section", option: "key1")
+    let key2: String = try config.get(section: "Section", option: "key2")
 
     #expect(key1 == "value1")
     #expect(key2 == "value2")
@@ -295,13 +301,13 @@ struct ConfigParserTests {
 
   @Test func testRoundtrip() throws {
     let original = """
-    [Section1]
-    key1=value1
-    key2=True
+      [Section1]
+      key1=value1
+      key2=True
 
-    [Section2]
-    key3=42
-    """
+      [Section2]
+      key3=42
+      """
 
     let parser1 = ConfigParser()
     try parser1.read(original)
@@ -322,19 +328,19 @@ struct ConfigParserTests {
 
   @Test func endToEnd() throws {
     let expected = """
-    [DEFAULT]
-    ServerAliveInterval = 45
-    Compression = yes
-    CompressionLevel = 9
-    ForwardX11 = yes
+      [DEFAULT]
+      ServerAliveInterval = 45
+      Compression = yes
+      CompressionLevel = 9
+      ForwardX11 = yes
 
-    [forge.example]
-    User = hg
+      [forge.example]
+      User = hg
 
-    [topsecret.server.example]
-    Port = 50022
-    ForwardX11 = no
-    """
+      [topsecret.server.example]
+      Port = 50022
+      ForwardX11 = no
+      """
 
     let config = ConfigParser()
     config.set(option: "ServerAliveInterval", value: 45)
