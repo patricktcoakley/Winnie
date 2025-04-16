@@ -39,6 +39,35 @@ struct TokenizerTests {
     }
   }
 
+  @Test func testUnterminatedSection() throws {
+    let tokenizer = Tokenizer("[section")
+    #expect(throws: TokenizerError.unterminatedSection(line: 1)) {
+      _ = try tokenizer.tokenize() // Or scan() depending on how deep you test
+    }
+  }
+
+  @Test func testUnterminatedStringMultiLine() throws {
+    let input = """
+    key = value
+    key2 = "Unfinished
+    """
+    let tokenizer = Tokenizer(input)
+    #expect(throws: TokenizerError.unterminatedString(line: 2)) {
+      _ = try tokenizer.tokenize()
+    }
+  }
+
+  @Test func testUnterminatedSectionMultiLine() throws {
+    let input = """
+    key = value
+    [section
+    """
+    let tokenizer = Tokenizer(input)
+    #expect(throws: TokenizerError.unterminatedSection(line: 2)) {
+      _ = try tokenizer.tokenize()
+    }
+  }
+
   @Test func testSimpleKeyValue() throws {
     let tokenizer = Tokenizer("name = John")
     let key = try tokenizer.scan()
@@ -53,15 +82,30 @@ struct TokenizerTests {
   @Test func testCommentWithHash() throws {
     let tokenizer = Tokenizer("# this is a comment")
     let token = try tokenizer.scan()
-    
+
     #expect(token == .comment("# this is a comment"))
   }
 
   @Test func testCommentWithSemicolon() throws {
     let tokenizer = Tokenizer("; this is a comment")
     let token = try tokenizer.scan()
-    
+
     #expect(token == .comment("; this is a comment"))
+  }
+
+  @Test func testInlineComments() throws {
+    let input = """
+    key1=value1;comment1
+    key2 = value2 # comment2
+    """
+    let tokenizer = Tokenizer(input)
+    let tokens = try tokenizer.tokenize()
+    let expected: [Token] = [
+      .string("key1"), .equals, .string("value1"), .comment(";comment1"), .newline,
+      .string("key2"), .equals, .string("value2"), .comment("# comment2"),
+      .eof,
+    ]
+    #expect(tokens == expected)
   }
 
   @Test func testSectionHeader() throws {

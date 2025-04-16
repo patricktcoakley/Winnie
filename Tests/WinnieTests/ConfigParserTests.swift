@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import Winnie
@@ -249,10 +250,10 @@ struct ConfigParserTests {
     LocalMap=DX.dx
     Host=
     Portal=
-    MapExt=dx 
+    MapExt=dx
     SaveExt=dxs
     Port=7790
-    Class=DeusEx.JCDentonMale       
+    Class=DeusEx.JCDentonMale
 
     [Engine.GameInfo]
     bLowGore=False
@@ -530,5 +531,83 @@ struct ConfigParserTests {
 
     #expect(parser["topsecret.server.example", "ForwardX11"] == "no")
     #expect(parser["topsecret.server.example", "Port"] == 50022)
+  }
+
+  @Test func readmeExample() async throws {
+    let input = """
+    [owner]
+    name = John Doe
+    organization = Acme Widgets Inc.
+
+    [database]
+    server = 192.0.2.62
+    port = 143
+    file = payroll.dat
+    path = /var/database
+    """
+
+    let config = ConfigParser()
+
+    try config.read(input)
+
+    let name: String = try config.get(section: "owner", option: "name")
+    #expect(name == "John Doe")
+
+    let name2 = config["owner", "name"]?.stringValue
+    #expect(name == name2)
+
+    let server: String = try config.get(section: "database", option: "server")
+    #expect(server == "192.0.2.62")
+
+    let portValue = config["database", "port"]
+    #expect(portValue?.intValue == 143)
+
+    let nonExistent = config["database", "nonexistent"]
+    #expect(nonExistent == nil)
+
+    try config.set(section: "database", option: "file", value: "payroll_updated.data")
+    let updatedFile: String = try config.get(section: "database", option: "file")
+    #expect(updatedFile == "payroll_updated.data")
+
+    config["database", "path"] = "/var/databasev2"
+    let updatedPathValue = config["database", "path"]
+    #expect(updatedPathValue?.stringValue == "/var/databasev2")
+
+    let fileManager = FileManager.default
+    let tempDirectoryURL = fileManager.temporaryDirectory
+      .appendingPathComponent("WinnieTests-\(UUID().uuidString)", isDirectory: true)
+
+    try fileManager.createDirectory(at: tempDirectoryURL, withIntermediateDirectories: true, attributes: nil)
+    defer {
+      try? fileManager.removeItem(at: tempDirectoryURL)
+    }
+
+    let tempFileURL = tempDirectoryURL.appendingPathComponent("config_test.ini")
+
+    try config.writeFile(tempFileURL.path)
+
+    #expect(fileManager.fileExists(atPath: tempFileURL.path))
+
+    let configFromFile = ConfigParser()
+    try configFromFile.readFile(tempFileURL.path)
+
+    let nameFromFile: String = try configFromFile.get(section: "owner", option: "name")
+    #expect(nameFromFile == "John Doe")
+
+    let fileFromFile: String = try configFromFile.get(section: "database", option: "file")
+    #expect(fileFromFile == "payroll_updated.data")
+
+    let pathFromFileValue = configFromFile["database", "path"]
+    #expect(pathFromFileValue?.stringValue == "/var/databasev2")
+
+    let portFromFileValue = configFromFile["database", "port"]
+    #expect(portFromFileValue?.intValue == 143)
+
+    let outputString = config.write()
+    #expect(outputString.contains("[owner]"))
+    #expect(outputString.contains("name = John Doe"))
+    #expect(outputString.contains("[database]"))
+    #expect(outputString.contains("file = payroll_updated.data"))
+    #expect(outputString.contains("path = /var/databasev2"))
   }
 }

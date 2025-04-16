@@ -27,6 +27,11 @@ public enum INIValue: CustomStringConvertible, Equatable, INIValueConvertible {
     }
   }
 
+  public var intValue: Int? { try? Int.from(self) }
+  public var doubleValue: Double? { try? Double.from(self) }
+  public var boolValue: Bool? { try? Bool.from(self) }
+  public var stringValue: String? { try? String.from(self) }
+
   public var description: String {
     switch self {
     case let .string(value): value
