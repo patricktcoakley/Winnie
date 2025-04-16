@@ -24,7 +24,7 @@ extension Bool: INIValueConvertible {
       switch string.lowercased() {
       case "true", "yes", "1", "on": true
       case "false", "no", "0", "off": false
-      default: true
+      default: throw ConfigParserError.valueError("Cannot convert to Bool: \(string)")
       }
     case let .double(t): t > 0.0
     case let .int(i): i > 0

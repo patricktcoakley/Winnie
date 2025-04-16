@@ -98,6 +98,22 @@ public final class ConfigParser {
     get(section: Self.DEFAULT_SECTION, option: option, default: defaultValue)
   }
 
+  public func getBool(section: String, option: String) throws(ConfigParserError) -> Bool {
+    try get(section: section, option: option)
+  }
+
+  public func getString(section: String, option: String) throws(ConfigParserError) -> String {
+    try get(section: section, option: option)
+  }
+
+  public func getInt(section: String, option: String) throws(ConfigParserError) -> Int {
+    try get(section: section, option: option)
+  }
+
+  public func getDouble(section: String, option: String) throws(ConfigParserError) -> Double {
+    try get(section: section, option: option)
+  }
+
   public func set(section: String, option: String, value: some INIValueConvertible) throws(ConfigParserError) {
     if config[section] == nil {
       throw ConfigParserError.sectionNotFound(section)
@@ -142,66 +158,67 @@ public final class ConfigParser {
     let tokens = try tokenizer.tokenize()
     var index = tokens.startIndex
     var currentSection = Self.DEFAULT_SECTION
+    var newConfig: Config = [Self.DEFAULT_SECTION: [:]]
 
     while index < tokens.endIndex {
       let token = tokens[index]
 
       switch token {
-      // Begin section
-      case .leftBracket:
-        index = tokens.index(after: index)
-
-        guard index < tokens.endIndex, case let .string(section) = tokens[index] else {
-          index = tokens.index(after: index)
-          continue
-        }
-
+      case let .section(section):
         currentSection = section
         if currentSection != Self.DEFAULT_SECTION {
-          try addSection(section)
+          newConfig[currentSection] = [:]
         }
 
         index = tokens.index(after: index)
-
-        // End section
-        if index < tokens.endIndex, tokens[index] == .rightBracket {
-          index = tokens.index(after: index)
-        }
 
       case let .string(option):
         index = tokens.index(after: index)
-        guard index < tokens.endIndex else { break }
 
-        if tokens[index] == .equals || tokens[index] == .colon {
+        if index < tokens.endIndex, tokens[index] == .equals || tokens[index] == .colon {
           index = tokens.index(after: index)
-          guard index < tokens.endIndex else { break }
 
-          let value: String = if case let .string(string) = tokens[index] { string } else { "" }
-          index = tokens.index(after: index)
-          try set(section: currentSection, option: option, value: value)
+          let value = if index < tokens.endIndex, case let .string(string) = tokens[index] {
+            string.trimmingCharacters(in: .whitespacesAndNewlines)
+          } else {
+            ""
+          }
+
+          newConfig[currentSection]?[option] = value.into()
+
+          if index < tokens.endIndex, case .string = tokens[index] {
+            index = tokens.index(after: index)
+          }
+        } else {
+          newConfig[currentSection]?[option] = ""
         }
 
       default:
         index = tokens.index(after: index)
       }
     }
+
+    config = newConfig
   }
 
-  public func writeFile(_ path: String) throws {
-    try write().write(toFile: path, atomically: true, encoding: .utf8)
+  public func writeFile(_ path: String, assignment: AssignmentCharacter = .equals, leadingSpaces: Bool = true) throws {
+    try write(assignment: assignment, leadingSpaces: leadingSpaces).write(toFile: path, atomically: true, encoding: .utf8)
   }
 
   public func write(assignment: AssignmentCharacter = .equals, leadingSpaces: Bool = true) -> String {
+    let spaces = leadingSpaces ? " " : ""
+    let assignment = "\(spaces)\(assignment.rawValue)\(spaces)"
+
     var output = ""
 
     if let defaultSection = config[Self.DEFAULT_SECTION], !defaultSection.isEmpty {
       output += "[DEFAULT]\n"
       for (option, value) in defaultSection {
-        output += "\(option)"
-        output += leadingSpaces ? " \(assignment.rawValue) " : "\(assignment.rawValue)"
-        output += "\(value.description)\n"
+        output += "\(option)\(assignment)\(value.description)\n"
       }
-      output += "\n"
+      if !defaultSection.isEmpty && config.keys.count > 1 {
+        output += "\n"
+      }
     }
 
     for section in sectionNames where section != Self.DEFAULT_SECTION {
@@ -209,9 +226,7 @@ public final class ConfigParser {
 
       if let sectionData = config[section] {
         for (option, value) in sectionData {
-          output += "\(option)"
-          output += leadingSpaces ? " \(assignment.rawValue) " : "\(assignment.rawValue)"
-          output += "\(value.description)\n"
+          output += "\(option)\(assignment)\(value.description)\n"
         }
       }
       output += "\n"

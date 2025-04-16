@@ -31,6 +31,104 @@ struct ConfigParserTests {
     }
   }
 
+  @Test func testGetBoolSimpleSuccess() throws {
+    let parser = ConfigParser()
+    try parser.read(#"""
+    [test]
+    flag = yes
+    """#)
+    #expect(try parser.getBool(section: "test", option: "flag") == true)
+  }
+
+  @Test func testGetStringSimpleSuccess() throws {
+    let parser = ConfigParser()
+    try parser.read(#"""
+    [test]
+    message = hello world
+    """#)
+    #expect(try parser.getString(section: "test", option: "message") == "hello world")
+  }
+
+  @Test func testGetIntSimpleSuccess() throws {
+    let parser = ConfigParser()
+    try parser.read(#"""
+    [test]
+    count = 99
+    """#)
+    #expect(try parser.getInt(section: "test", option: "count") == 99)
+  }
+
+  @Test func testGetDoubleSimpleSuccess() throws {
+    let parser = ConfigParser()
+    try parser.read(#"""
+    [test]
+    pi = 3.14159
+    """#)
+    #expect(try parser.getDouble(section: "test", option: "pi") == 3.14159)
+  }
+
+  @Test func testGetBoolSimpleTypeError() throws {
+    let parser = ConfigParser()
+    try parser.read(#"""
+    [test]
+    message = hello world
+    """#)
+    #expect(throws: ConfigParserError.valueError("Cannot convert to Bool: hello world")) {
+      try parser.getBool(section: "test", option: "message")
+    }
+  }
+
+  @Test func testGetIntSimpleTypeError() throws {
+    let parser = ConfigParser()
+    try parser.read(#"""
+    [test]
+    flag = yes
+    """#)
+    #expect(throws: ConfigParserError.valueError("Cannot convert to Int: yes")) {
+      try parser.getInt(section: "test", option: "flag")
+    }
+  }
+
+  @Test func testGetSimpleMissingOption() throws {
+    let parser = ConfigParser()
+    try parser.read(#"""
+    [test]
+    count = 99
+    """#)
+    #expect(throws: ConfigParserError.optionNotFound("missing")) {
+      try parser.getInt(section: "test", option: "missing")
+    }
+  }
+
+  @Test func testGetSimpleMissingSection() throws {
+    let parser = ConfigParser()
+    try parser.read(#"""
+    [other_test]
+    count = 99
+    """#)
+    #expect(throws: ConfigParserError.sectionNotFound("test")) {
+      try parser.getInt(section: "test", option: "count")
+    }
+  }
+
+  @Test func testGetIntAsString() throws {
+    let parser = ConfigParser()
+    try parser.read(#"""
+    [data]
+    value = 123
+    """#)
+    #expect(try parser.getString(section: "data", option: "value") == "123")
+  }
+
+  @Test func testGetBoolAsString() throws {
+    let parser = ConfigParser()
+    try parser.read(#"""
+    [data]
+    value = True
+    """#)
+    #expect(try parser.getString(section: "data", option: "value") == "True")
+  }
+
   @Test func testSetAndGetString() throws {
     let config = ConfigParser()
 

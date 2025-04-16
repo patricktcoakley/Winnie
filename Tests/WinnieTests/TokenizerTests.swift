@@ -64,13 +64,9 @@ struct TokenizerTests {
 
   @Test func testSectionHeader() throws {
     let tokenizer = Tokenizer("[section]")
-    let left = try tokenizer.scan()
-    let name = try tokenizer.scan()
-    let right = try tokenizer.scan()
+    let section = try tokenizer.scan()
 
-    #expect(left == .leftBracket)
-    #expect(name == .string("section"))
-    #expect(right == .rightBracket)
+    #expect(section == .section("section"))
   }
 
   @Test func testKeyWithSpecialCharacters() throws {
@@ -107,9 +103,9 @@ struct TokenizerTests {
     let tokens = try tokenizer.tokenize()
 
     let expected: [Token] = [
-      .leftBracket, .string("section1"), .rightBracket,
+      .section("section1"),
       .newline,
-      .leftBracket, .string("section2"), .rightBracket,
+      .section("section2"),
       .eof,
     ]
 
@@ -136,17 +132,17 @@ struct TokenizerTests {
 
     let expected: [Token] = [
       .comment("# Global settings"), .newline,
-      .leftBracket, .string("general"), .rightBracket, .newline,
+      .section("general"), .newline,
       .string("app_name"), .equals, .string("TestApp"), .newline,
       .string("version"), .equals, .string("1.0.0"), .newline,
       .string("debug"), .equals, .string("true"), .newline,
       .newline,
       .comment("; User config"), .newline,
-      .leftBracket, .string("user"), .rightBracket, .newline,
+      .section("user"), .newline,
       .string("name"), .equals, .string("Jane Doe"), .newline,
       .string("email"), .equals, .string("jane@example.com"), .newline,
       .newline,
-      .leftBracket, .string("network"), .rightBracket, .newline,
+      .section("network"), .newline,
       .string("host"), .equals, .string("localhost"), .newline,
       .string("port"), .equals, .string("8080"),
       .eof,
@@ -166,7 +162,7 @@ struct TokenizerTests {
     """
 
     let expected: [Token] = [
-      .leftBracket, .string("URL"), .rightBracket, .newline,
+      .section("URL"), .newline,
       .string("Protocol"), .equals, .string("deusex"), .newline,
       .string("Host"), .equals,
       .eof,
@@ -212,12 +208,13 @@ struct TokenizerTests {
     let tokens = try tokenizer.tokenize()
 
     let expected: [Token] = [
-      .leftBracket, .string("section1"), .rightBracket, .newline,
+      .section("section1"), .newline,
       .string("key1"), .equals, .string("value1"), .newline,
       .newline,
       .comment("# Comment"), .newline,
-      .leftBracket, .string("section2"), .rightBracket, .newline,
-      .string("key2"), .colon, .string("value2"), .eof,
+      .section("section2"), .newline,
+      .string("key2"), .colon, .string("value2"),
+      .eof,
     ]
 
     #expect(tokens == expected)

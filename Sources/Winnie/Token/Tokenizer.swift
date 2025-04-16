@@ -32,11 +32,7 @@ public final class Tokenizer {
 
     switch current {
     case "[":
-      advance()
-      return .leftBracket
-    case "]":
-      advance()
-      return .rightBracket
+      return try handleSection()
     case "=":
       advance()
       return .equals
@@ -137,5 +133,34 @@ public final class Tokenizer {
     let value = input[start ..< currentIndex]
 
     return .comment(String(value).trimmingCharacters(in: .whitespaces))
+  }
+
+  private func handleSection() throws(TokenizerError) -> Token {
+    advance()
+
+    let start = currentIndex
+    var didSectionEnd = false
+
+    while currentIndex < input.endIndex, current != "\n" {
+      if current == "]" {
+        didSectionEnd = true
+        break
+      }
+
+      if current == "\n" {
+        throw TokenizerError.unterminatedSection(line: line)
+      }
+
+      advance()
+    }
+
+    if !didSectionEnd {
+      throw TokenizerError.unterminatedSection(line: line)
+    }
+
+    let value = input[start ..< currentIndex]
+    advance()
+
+    return .section(String(value))
   }
 }
