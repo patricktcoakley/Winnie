@@ -1,6 +1,6 @@
 # Winnie
 
-An [INI](https://en.wikipedia.org/wiki/INI_file) parsing library loosely based on [ConfigParser](https://docs.python.org/3/library/configparser.html) for Swift. Currently supports the general featureset of ConfigParser with [#roadmap](more features planned in the future).
+An [INI](https://en.wikipedia.org/wiki/INI_file)/config file parsing library inpsired by [ConfigParser](https://docs.python.org/3/library/configparser.html) for Swift. Currently supports the general featureset of ConfigParser with [more features planned in the future](#roadmap).
 
 ## Usage
 
@@ -27,21 +27,19 @@ try config.readFile("/path/to/settings.ini") // Reads from a file path
 
 // Winnie supports multiple ways to access sections, options, and values
 
-// The get/set methods are marked as throws
-// Use specific type getters or the generic get<T>
+// The get/set methods are marked as `throws`
+// You can use specific type getters or the generic get<T>
 let name = try config.getString(section: "owner", option: "name")
-let server: String = try config.get(section: "database", option: "server")
-
-// Subscripting returns an optional INIValue? (nil if section/option doesn't exist)
-let portValue = config["database", "port"] // portValue is of type INIValue?
-if let port = portValue?.intValue {
-    print("Port as Int: \(port)") // Access underlying value with .intValue, .stringValue, etc.
-}
-
-// Use the set method (throws)
+let server: String = try config.get(section: "database", option: "server") // type inference
 try config.set(section: "database", option: "file", value: "payroll_updated.data")
 
-// Use subscript assignment
+// Subscripting returns an optional INIValue? for safe value extraction
+let portValue = config["database", "port"] // portValue is of type INIValue?
+if let port = portValue?.intValue { // You can attempt to extract it using a typed getter
+    print("Port as Int: \(port)")
+}
+
+// You can also safely use subscripting for assignment
 config["database", "path"] = "/var/databasev2" // Assigns an INIValueConvertible
 
 // You can write to a string or a file
@@ -51,4 +49,8 @@ try config.writeFile("/tmp/database.ini") // Writes the INI content to a file pa
 
 ## Roadmap
 
-* It is a goal to eventually fully support [Unreal Engine configuration files](https://dev.epicgames.com/documentation/en-us/unreal-engine/configuration-files-in-unreal-engine), which also has arrays, structs, and other primitives beyond what is usually available in the standard INI format.
+At this point Winnie is pretty much feature-complete, and any of the following are more of a wishlist of things I would like to see added at some point in the future:
+
+* It is a goal to eventually fully support [Unreal Engine configuration files](https://dev.epicgames.com/documentation/en-us/unreal-engine/configuration-files-in-unreal-engine), which also has arrays, tuples, structs, and other primitives beyond what is usually available in the standard INI format.
+* Being able to preserve comments is not currently a goal per-se, as many similar libraries also don't do that, but it is also something I want to explore in the future as I could see it being beneficial to the end-user.
+* Adding more customization for things like casing and formatting for output could be interesting.

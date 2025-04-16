@@ -18,11 +18,11 @@ public final class ConfigParser {
   }
 
   public init(file path: String) throws {
-    try self.readFile(path)
+    try readFile(path)
   }
 
   public init(input string: String) throws {
-    try self.read(string)
+    try read(string)
   }
 
   public var sections: SectionProxySequence { SectionProxySequence(parser: self) }
@@ -37,6 +37,7 @@ public final class ConfigParser {
     get {
       config[Self.DEFAULT_SECTION]?[option]
     }
+
     set {
       if config[Self.DEFAULT_SECTION] == nil {
         config[Self.DEFAULT_SECTION] = [:]
@@ -56,11 +57,14 @@ public final class ConfigParser {
       if let sectionValue = config[section]?[option] {
         return sectionValue
       }
+
       if section != Self.DEFAULT_SECTION {
         return config[Self.DEFAULT_SECTION]?[option]
       }
+
       return nil
     }
+
     set {
       if config[section] == nil {
         config[section] = [:]
@@ -83,9 +87,7 @@ public final class ConfigParser {
     throw .sectionNotFound(section)
   }
 
-  public func get<T: INIValueConvertible>(section: String, option: String) throws(ConfigParserError)
-    -> T
-  {
+  public func get<T: INIValueConvertible>(section: String, option: String) throws(ConfigParserError) -> T {
     if let section = config[section] {
       guard let value = section[option] else { throw .optionNotFound(option) }
       return try T.from(value)
@@ -210,7 +212,8 @@ public final class ConfigParser {
   }
 
   public func writeFile(_ path: String, assignment: AssignmentCharacter = .equals, leadingSpaces: Bool = true) throws {
-    try write(assignment: assignment, leadingSpaces: leadingSpaces).write(toFile: path, atomically: true, encoding: .utf8)
+    try write(
+      assignment: assignment, leadingSpaces: leadingSpaces).write(toFile: path, atomically: true, encoding: .utf8)
   }
 
   public func write(assignment: AssignmentCharacter = .equals, leadingSpaces: Bool = true) -> String {
@@ -224,7 +227,9 @@ public final class ConfigParser {
       for (option, value) in defaultSection {
         output += "\(option)\(assignment)\(value.description)\n"
       }
-      if !defaultSection.isEmpty && config.keys.count > 1 {
+
+      // Only add a newline if DEFAULT isn't the only section and isnt empty
+      if !defaultSection.isEmpty, config.keys.count > 1 {
         output += "\n"
       }
     }
