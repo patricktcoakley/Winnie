@@ -53,12 +53,14 @@ struct TokenizerTests {
   @Test func testCommentWithHash() throws {
     let tokenizer = Tokenizer("# this is a comment")
     let token = try tokenizer.scan()
+    
     #expect(token == .comment("# this is a comment"))
   }
 
   @Test func testCommentWithSemicolon() throws {
     let tokenizer = Tokenizer("; this is a comment")
     let token = try tokenizer.scan()
+    
     #expect(token == .comment("; this is a comment"))
   }
 

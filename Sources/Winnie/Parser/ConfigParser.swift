@@ -17,6 +17,14 @@ public final class ConfigParser {
     config[Self.DEFAULT_SECTION] = [:]
   }
 
+  public init(file path: String) throws {
+    try self.readFile(path)
+  }
+
+  public init(input string: String) throws {
+    try self.read(string)
+  }
+
   public var sections: SectionProxySequence { SectionProxySequence(parser: self) }
   public var sectionNames: [String] { Array(config.keys) }
 

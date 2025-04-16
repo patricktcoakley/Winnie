@@ -130,15 +130,15 @@ struct ConfigParserTests {
   }
 
   @Test func testSetAndGetString() throws {
-    let config = ConfigParser()
+    let parser = ConfigParser()
 
-    try config.addSection("user")
-    try config.set(section: "user", option: "name", value: "John")
+    try parser.addSection("user")
+    try parser.set(section: "user", option: "name", value: "John")
 
-    let name: String = try config.get(section: "user", option: "name")
+    let name: String = try parser.get(section: "user", option: "name")
     #expect(name == "John")
 
-    let age: Int = config.get(section: "user", option: "age", default: 10)
+    let age: Int = parser.get(section: "user", option: "age", default: 10)
     #expect(age == 10)
   }
 
@@ -258,31 +258,31 @@ struct ConfigParserTests {
     bLowGore=False
     """
 
-    let configParser = ConfigParser()
-    try configParser.read(contents)
-    #expect(configParser.hasSection("URL"))
-    #expect(try configParser.get(section: "URL", option: "Host") == "")
-    #expect(try configParser.get(section: "URL", option: "Portal") == "")
-    #expect(try configParser.get(section: "URL", option: "Name") == "Player")
-    #expect(try configParser.get(section: "URL", option: "Port") == 7790)
+    let parser = ConfigParser()
+    try parser.read(contents)
+    #expect(parser.hasSection("URL"))
+    #expect(try parser.get(section: "URL", option: "Host") == "")
+    #expect(try parser.get(section: "URL", option: "Portal") == "")
+    #expect(try parser.get(section: "URL", option: "Name") == "Player")
+    #expect(try parser.get(section: "URL", option: "Port") == 7790)
     #expect(
-      try configParser.get(section: "URL", option: "ProtocolDescription") == "Deus Ex Protocol")
-    #expect(try configParser.get(section: "URL", option: "Class") == "DeusEx.JCDentonMale")
-    #expect(try configParser.get(section: "Engine.GameInfo", option: "bLowGore") == false)
+      try parser.get(section: "URL", option: "ProtocolDescription") == "Deus Ex Protocol")
+    #expect(try parser.get(section: "URL", option: "Class") == "DeusEx.JCDentonMale")
+    #expect(try parser.get(section: "Engine.GameInfo", option: "bLowGore") == false)
   }
 
   @Test func writeExample() throws {
-    let configParser = ConfigParser()
+    let parser = ConfigParser()
 
-    try configParser.addSection("URL")
-    try configParser.set(section: "URL", option: "Protocol", value: "deusex")
-    try configParser.set(section: "URL", option: "Name", value: "Player")
-    try configParser.set(section: "URL", option: "Port", value: 7790)
+    try parser.addSection("URL")
+    try parser.set(section: "URL", option: "Protocol", value: "deusex")
+    try parser.set(section: "URL", option: "Name", value: "Player")
+    try parser.set(section: "URL", option: "Port", value: 7790)
 
-    try configParser.addSection("Engine.GameInfo")
-    try configParser.set(section: "Engine.GameInfo", option: "bLowGore", value: false)
+    try parser.addSection("Engine.GameInfo")
+    try parser.set(section: "Engine.GameInfo", option: "bLowGore", value: false)
 
-    let result = configParser.write(leadingSpaces: false)
+    let result = parser.write(leadingSpaces: false)
 
     let expected = """
     [URL]
@@ -305,12 +305,12 @@ struct ConfigParserTests {
     theme = "dark"
     """
 
-    let config = ConfigParser()
-    try config.read(input)
+    let parser = ConfigParser()
+    try parser.read(input)
 
-    let useColor: Bool = try config.get(section: "Settings", option: "useColor")
-    let fontSize: Int = try config.get(section: "Settings", option: "fontSize")
-    let theme: String = try config.get(section: "Settings", option: "theme")
+    let useColor: Bool = try parser.get(section: "Settings", option: "useColor")
+    let fontSize: Int = try parser.get(section: "Settings", option: "fontSize")
+    let theme: String = try parser.get(section: "Settings", option: "theme")
 
     #expect(useColor == true)
     #expect(fontSize == 12)
@@ -362,11 +362,11 @@ struct ConfigParserTests {
     emptyValue=
     """
 
-    let config = ConfigParser()
-    try config.read(input)
+    let parser = ConfigParser()
+    try parser.read(input)
 
-    #expect(config.hasSection("EmptySection"))
-    let emptyValue: String = try config.get(section: "Section", option: "emptyValue")
+    #expect(parser.hasSection("EmptySection"))
+    let emptyValue: String = try parser.get(section: "Section", option: "emptyValue")
     #expect(emptyValue == "")
   }
 
@@ -402,11 +402,11 @@ struct ConfigParserTests {
     key2=value2
     """
 
-    let config = ConfigParser()
-    try config.read(input)
+    let parser = ConfigParser()
+    try parser.read(input)
 
-    let key1: String = try config.get(section: "Section", option: "key1")
-    let key2: String = try config.get(section: "Section", option: "key2")
+    let key1: String = try parser.get(section: "Section", option: "key1")
+    let key2: String = try parser.get(section: "Section", option: "key2")
 
     #expect(key1 == "value1")
     #expect(key2 == "value2")
@@ -455,34 +455,34 @@ struct ConfigParserTests {
     ForwardX11 = no
     """
 
-    let config = ConfigParser()
-    try config.set(option: "ServerAliveInterval", value: 45)
-    try config.set(option: "Compression", value: "yes")
-    try config.set(option: "CompressionLevel", value: 9)
-    try config.set(option: "ForwardX11", value: "yes")
+    let parser = ConfigParser()
+    try parser.set(option: "ServerAliveInterval", value: 45)
+    try parser.set(option: "Compression", value: "yes")
+    try parser.set(option: "CompressionLevel", value: 9)
+    try parser.set(option: "ForwardX11", value: "yes")
 
-    try config.addSection("forge.example")
-    try config.set(section: "forge.example", option: "User", value: "hg")
+    try parser.addSection("forge.example")
+    try parser.set(section: "forge.example", option: "User", value: "hg")
 
-    try config.addSection("topsecret.server.example")
-    try config.set(section: "topsecret.server.example", option: "Port", value: 50022)
-    try config.set(section: "topsecret.server.example", option: "ForwardX11", value: "no")
+    try parser.addSection("topsecret.server.example")
+    try parser.set(section: "topsecret.server.example", option: "Port", value: 50022)
+    try parser.set(section: "topsecret.server.example", option: "ForwardX11", value: "no")
 
-    #expect(expected == config.write())
-    let config2 = ConfigParser()
-    try config2.read(expected)
-    #expect(config2.write() == config.write())
+    #expect(expected == parser.write())
+    let parser2 = ConfigParser()
+    try parser2.read(expected)
+    #expect(parser2.write() == parser.write())
 
     let expectedSections = ["DEFAULT", "forge.example", "topsecret.server.example"]
-    #expect(expectedSections == config.sectionNames)
+    #expect(expectedSections == parser.sectionNames)
 
-    #expect(config.hasSection("forge.example"))
-    #expect(!config.hasSection("python.org"))
-    #expect(try config.get(section: "forge.example", option: "User") == "hg")
-    #expect(try config.get(option: "Compression") == "yes")
+    #expect(parser.hasSection("forge.example"))
+    #expect(!parser.hasSection("python.org"))
+    #expect(try parser.get(section: "forge.example", option: "User") == "hg")
+    #expect(try parser.get(option: "Compression") == "yes")
 
-    #expect(try config.get(section: "topsecret.server.example", option: "ForwardX11") == "no")
-    #expect(try config.get(section: "topsecret.server.example", option: "Port") == 50022)
+    #expect(try parser.get(section: "topsecret.server.example", option: "ForwardX11") == "no")
+    #expect(try parser.get(section: "topsecret.server.example", option: "Port") == 50022)
   }
 
   @Test func testEndToEndSubscript() throws {
@@ -501,34 +501,34 @@ struct ConfigParserTests {
     ForwardX11 = no
     """
 
-    let config = ConfigParser()
+    let parser = ConfigParser()
 
-    config["ServerAliveInterval"] = 45
-    config["Compression"] = "yes"
-    config["CompressionLevel"] = 9
-    config["ForwardX11"] = "yes"
+    parser["ServerAliveInterval"] = 45
+    parser["Compression"] = "yes"
+    parser["CompressionLevel"] = 9
+    parser["ForwardX11"] = "yes"
 
-    config["forge.example", "User"] = "hg"
+    parser["forge.example", "User"] = "hg"
 
-    config["topsecret.server.example", "Port"] = 50022
-    config["topsecret.server.example", "ForwardX11"] = "no"
+    parser["topsecret.server.example", "Port"] = 50022
+    parser["topsecret.server.example", "ForwardX11"] = "no"
 
-    #expect(expected == config.write())
+    #expect(expected == parser.write())
 
-    let config2 = ConfigParser()
-    try config2.read(expected)
-    #expect(config2.write() == config.write())
+    let parser2 = ConfigParser()
+    try parser2.read(expected)
+    #expect(parser2.write() == parser.write())
 
     let expectedSections = ["DEFAULT", "forge.example", "topsecret.server.example"]
-    #expect(expectedSections == config.sectionNames)
+    #expect(expectedSections == parser.sectionNames)
 
-    #expect(config.hasSection("forge.example"))
-    #expect(!config.hasSection("python.org"))
+    #expect(parser.hasSection("forge.example"))
+    #expect(!parser.hasSection("python.org"))
 
-    #expect(config["forge.example", "User"] == "hg")
-    #expect(config["Compression"] == "yes")
+    #expect(parser["forge.example", "User"] == "hg")
+    #expect(parser["Compression"] == "yes")
 
-    #expect(config["topsecret.server.example", "ForwardX11"] == "no")
-    #expect(config["topsecret.server.example", "Port"] == 50022)
+    #expect(parser["topsecret.server.example", "ForwardX11"] == "no")
+    #expect(parser["topsecret.server.example", "Port"] == 50022)
   }
 }
