@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: swiftlang/swift:6.0
+      image: swift/swift:6.0
     steps:
       - uses: actions/checkout@v4
       - name: Build
