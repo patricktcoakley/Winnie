@@ -603,11 +603,37 @@ struct ConfigParserTests {
     let portFromFileValue = configFromFile["database", "port"]
     #expect(portFromFileValue?.intValue == 143)
 
+    let expectedOutput = """
+    [owner]
+    name = John Doe
+    organization = Acme Widgets Inc.
+
+    [database]
+    server = 192.0.2.62
+    port = 143
+    file = payroll_updated.data
+    path = /var/databasev2
+    """
+
     let outputString = config.write()
-    #expect(outputString.contains("[owner]"))
-    #expect(outputString.contains("name = John Doe"))
-    #expect(outputString.contains("[database]"))
-    #expect(outputString.contains("file = payroll_updated.data"))
-    #expect(outputString.contains("path = /var/databasev2"))
+    #expect(outputString == expectedOutput)
+  }
+
+  @Test func testCustomDefaultSection() throws {
+    let parser = ConfigParser(defaultSection: "GLOBAL")
+
+    #expect(parser.hasSection("GLOBAL"))
+
+    parser["debug"] = true
+    parser["app_name"] = "MyApp"
+
+    #expect(parser["GLOBAL", "debug"] == true)
+    #expect(parser["GLOBAL", "app_name"] == "MyApp")
+
+    let debug: Bool = try parser.get(option: "debug")
+    let appName: String = try parser.get(option: "app_name")
+
+    #expect(debug == true)
+    #expect(appName == "MyApp")
   }
 }

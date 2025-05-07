@@ -1,4 +1,4 @@
-public final class Tokenizer {
+public struct Tokenizer {
   let input: String
   var line = 1
   var currentIndex: String.Index
@@ -14,7 +14,7 @@ public final class Tokenizer {
     currentIndex = self.input.startIndex
   }
 
-  public func tokenize() throws(TokenizerError) -> [Token] {
+  public mutating func tokenize() throws(TokenizerError) -> [Token] {
     var tokens: [Token] = []
 
     while true {
@@ -25,7 +25,7 @@ public final class Tokenizer {
     return tokens
   }
 
-  public func scan() throws(TokenizerError) -> Token {
+  public mutating func scan() throws(TokenizerError) -> Token {
     skipWhitespace()
 
     guard currentIndex < input.endIndex else { return .eof }
@@ -59,18 +59,18 @@ public final class Tokenizer {
     }
   }
 
-  private func advance() {
+  private mutating func advance() {
     if current == "\n" { line += 1 }
     currentIndex = input.index(after: currentIndex)
   }
 
-  private func skipWhitespace() {
+  private mutating func skipWhitespace() {
     while currentIndex < input.endIndex, current.isWhitespace, !current.isNewline {
       advance()
     }
   }
 
-  private func handleQuotedString() throws(TokenizerError) -> Token {
+  private mutating func handleQuotedString() throws(TokenizerError) -> Token {
     var stringValue = ""
 
     advance()
@@ -107,7 +107,7 @@ public final class Tokenizer {
     throw TokenizerError.unterminatedString(line: line)
   }
 
-  private func handleString() -> Token {
+  private mutating func handleString() -> Token {
     let start = currentIndex
 
     while currentIndex < input.endIndex {
@@ -122,7 +122,7 @@ public final class Tokenizer {
     return .string(String(value).trimmingCharacters(in: .whitespaces))
   }
 
-  private func handleComment() -> Token {
+  private mutating func handleComment() -> Token {
     let start = currentIndex
     advance()
 
@@ -135,7 +135,7 @@ public final class Tokenizer {
     return .comment(String(value).trimmingCharacters(in: .whitespaces))
   }
 
-  private func handleSection() throws(TokenizerError) -> Token {
+  private mutating func handleSection() throws(TokenizerError) -> Token {
     advance()
 
     let start = currentIndex

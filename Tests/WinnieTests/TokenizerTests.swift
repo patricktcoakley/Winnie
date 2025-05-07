@@ -3,44 +3,44 @@ import Testing
 
 struct TokenizerTests {
   @Test func testSimpleString() throws {
-    let tokenizer = Tokenizer("\"Hello, world!\"")
+    var tokenizer = Tokenizer("\"Hello, world!\"")
     let token = try tokenizer.scan()
     #expect(token == .string("Hello, world!"))
   }
 
   @Test func testStringWithEscapedQuote() throws {
-    let tokenizer = Tokenizer("\"Hello, \\\"world!\\\"\"")
+    var tokenizer = Tokenizer("\"Hello, \\\"world!\\\"\"")
     let token = try tokenizer.scan()
     #expect(token == .string("Hello, \"world!\""))
   }
 
   @Test func testStringWithEscapedBackslash() throws {
-    let tokenizer = Tokenizer("\"Hello \\\\ world\"")
+    var tokenizer = Tokenizer("\"Hello \\\\ world\"")
     let token = try tokenizer.scan()
     #expect(token == .string("Hello \\ world"))
   }
 
   @Test func testEmptyString() throws {
-    let tokenizer = Tokenizer("\"\"")
+    var tokenizer = Tokenizer("\"\"")
     let token = try tokenizer.scan()
     #expect(token == .string(""))
   }
 
   @Test func testEmptyInput() throws {
-    let tokenizer = Tokenizer("")
+    var tokenizer = Tokenizer("")
     let token = try tokenizer.scan()
     #expect(token == .eof)
   }
 
   @Test func testUnterminatedString() throws {
-    let tokenizer = Tokenizer("\"Unfinished")
+    var tokenizer = Tokenizer("\"Unfinished")
     #expect(throws: TokenizerError.unterminatedString(line: 1)) {
       try tokenizer.scan()
     }
   }
 
   @Test func testUnterminatedSection() throws {
-    let tokenizer = Tokenizer("[section")
+    var tokenizer = Tokenizer("[section")
     #expect(throws: TokenizerError.unterminatedSection(line: 1)) {
       _ = try tokenizer.tokenize() // Or scan() depending on how deep you test
     }
@@ -51,7 +51,7 @@ struct TokenizerTests {
     key = value
     key2 = "Unfinished
     """
-    let tokenizer = Tokenizer(input)
+    var tokenizer = Tokenizer(input)
     #expect(throws: TokenizerError.unterminatedString(line: 2)) {
       _ = try tokenizer.tokenize()
     }
@@ -62,14 +62,14 @@ struct TokenizerTests {
     key = value
     [section
     """
-    let tokenizer = Tokenizer(input)
+    var tokenizer = Tokenizer(input)
     #expect(throws: TokenizerError.unterminatedSection(line: 2)) {
       _ = try tokenizer.tokenize()
     }
   }
 
   @Test func testSimpleKeyValue() throws {
-    let tokenizer = Tokenizer("name = John")
+    var tokenizer = Tokenizer("name = John")
     let key = try tokenizer.scan()
     let equals = try tokenizer.scan()
     let value = try tokenizer.scan()
@@ -80,14 +80,14 @@ struct TokenizerTests {
   }
 
   @Test func testCommentWithHash() throws {
-    let tokenizer = Tokenizer("# this is a comment")
+    var tokenizer = Tokenizer("# this is a comment")
     let token = try tokenizer.scan()
 
     #expect(token == .comment("# this is a comment"))
   }
 
   @Test func testCommentWithSemicolon() throws {
-    let tokenizer = Tokenizer("; this is a comment")
+    var tokenizer = Tokenizer("; this is a comment")
     let token = try tokenizer.scan()
 
     #expect(token == .comment("; this is a comment"))
@@ -98,7 +98,7 @@ struct TokenizerTests {
     key1=value1;comment1
     key2 = value2 # comment2
     """
-    let tokenizer = Tokenizer(input)
+    var tokenizer = Tokenizer(input)
     let tokens = try tokenizer.tokenize()
     let expected: [Token] = [
       .string("key1"), .equals, .string("value1"), .comment(";comment1"), .newline,
@@ -109,14 +109,14 @@ struct TokenizerTests {
   }
 
   @Test func testSectionHeader() throws {
-    let tokenizer = Tokenizer("[section]")
+    var tokenizer = Tokenizer("[section]")
     let section = try tokenizer.scan()
 
     #expect(section == .section("section"))
   }
 
   @Test func testKeyWithSpecialCharacters() throws {
-    let tokenizer = Tokenizer(#"Paths=..\System\*.u"#)
+    var tokenizer = Tokenizer(#"Paths=..\System\*.u"#)
     let tokens = try tokenizer.tokenize()
 
     let expected: [Token] = [
@@ -128,7 +128,7 @@ struct TokenizerTests {
 
   @Test func testMissingValueAfterEquals() throws {
     let input = "key = "
-    let tokenizer = Tokenizer(input)
+    var tokenizer = Tokenizer(input)
 
     let key = try tokenizer.scan()
     let equals = try tokenizer.scan()
@@ -145,7 +145,7 @@ struct TokenizerTests {
     [section2]
     """
 
-    let tokenizer = Tokenizer(input)
+    var tokenizer = Tokenizer(input)
     let tokens = try tokenizer.tokenize()
 
     let expected: [Token] = [
@@ -194,7 +194,7 @@ struct TokenizerTests {
       .eof,
     ]
 
-    let tokenizer = Tokenizer(input)
+    var tokenizer = Tokenizer(input)
     let tokens = try tokenizer.tokenize()
 
     #expect(tokens == expected)
@@ -214,7 +214,7 @@ struct TokenizerTests {
       .eof,
     ]
 
-    let tokenizer = Tokenizer(contents)
+    var tokenizer = Tokenizer(contents)
     let tokens = try tokenizer.tokenize()
     #expect(tokens == expected)
   }
@@ -226,7 +226,7 @@ struct TokenizerTests {
     key2 = value2
     """
 
-    let tokenizer = Tokenizer(input)
+    var tokenizer = Tokenizer(input)
     let tokens = try tokenizer.tokenize()
 
     let expected: [Token] = [
@@ -250,7 +250,7 @@ struct TokenizerTests {
     key2:value2
     """
 
-    let tokenizer = Tokenizer(input)
+    var tokenizer = Tokenizer(input)
     let tokens = try tokenizer.tokenize()
 
     let expected: [Token] = [

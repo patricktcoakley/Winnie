@@ -5,7 +5,6 @@ import PackageDescription
 let package = Package(
   name: "Winnie",
   products: [
-    // Products define the executables and libraries a package produces, making them visible to other packages.
     .library(
       name: "Winnie",
       targets: ["Winnie"]
