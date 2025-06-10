@@ -1,0 +1,732 @@
+/Users/pt/Source/Swift/Winnie/Sources/Winnie/Token/Token+CustomStringConvertible.swift:
+    1|       |extension Token: CustomStringConvertible {
+    2|      0|  public var description: String {
+    3|      0|    switch self {
+    4|      0|    // Reserved for future use
+    5|      0|    case .plus: "+"
+    6|      0|    case .bang: "!"
+    7|      0|    // Single tokens
+    8|      0|    case .equals: "="
+    9|      0|    case .colon: ":"
+   10|      0|    case .minus: "-"
+   11|      0|    case .newline: "\n"
+   12|      0|    case .eof: "EOF"
+   13|      0|    // Value tokens
+   14|      0|    case let .section(value): "[\(value)]"
+   15|      0|    case let .string(value): value
+   16|      0|    case let .comment(value): value
+   17|      0|    }
+   18|      0|  }
+   19|       |}
+
+/Users/pt/Source/Swift/Winnie/Sources/Winnie/Token/Token+CustomDebugStringConvertible.swift:
+    1|       |extension Token: CustomDebugStringConvertible {
+    2|      0|  public var debugDescription: String {
+    3|      0|    switch self {
+    4|      0|    case .plus: "plus::<+>"
+    5|      0|    case .bang: "bang::<!>"
+    6|      0|    case .equals: "equals::<=>"
+    7|      0|    case .colon: "colon::,<:>"
+    8|      0|    case .minus: "minus::<->"
+    9|      0|    case .newline: "newline::<\n>"
+   10|      0|    case .eof: "eof::<EOF>"
+   11|      0|    case let .section(value): "section::<\(value)]"
+   12|      0|    case let .string(value): "string::<\(value)>"
+   13|      0|    case let .comment(value): "comment::<\(value)>"
+   14|      0|    }
+   15|      0|  }
+   16|       |}
+
+/Users/pt/Source/Swift/Winnie/Sources/Winnie/Token/Tokenizer.swift:
+    1|       |public struct Tokenizer {
+    2|       |  let input: String
+    3|     42|  var line = 1
+    4|       |  var currentIndex: String.Index
+    5|  8.25k|  var current: Character { input[currentIndex] }
+    6|       |
+    7|  1.26k|  var isSupportedCharacter: Bool {
+    8|  1.26k|    current.isLetter || current.isNumber || current == "_" || current == "-" || current == "."
+                                      ^339                ^225              ^223              ^223
+    9|  1.26k|      || current == " " || current == "*" || current == "/" || current == "\\"
+                       ^205              ^138              ^137              ^131
+   10|  1.26k|  }
+   11|       |
+   12|     42|  init(_ input: String) {
+   13|     42|    self.input = input
+   14|     42|    currentIndex = self.input.startIndex
+   15|     42|  }
+   16|       |
+   17|     31|  public mutating func tokenize() throws(TokenizerError) -> [Token] {
+   18|     31|    var tokens: [Token] = []
+   19|     31|
+   20|    426|    while true {
+   21|    426|      let token = try scan()
+   22|    423|      tokens.append(token)
+   23|    423|      if token == .eof { break }
+                                     ^28
+   24|    395|    }
+   25|     28|    return tokens
+   26|     31|  }
+   27|       |
+   28|    441|  public mutating func scan() throws(TokenizerError) -> Token {
+   29|    441|    skipWhitespace()
+   30|    441|
+   31|    441|    guard currentIndex < input.endIndex else { return .eof }
+                                                           ^30
+   32|    411|
+   33|    411|    switch current {
+   34|    411|    case "[":
+   35|     42|      return try handleSection()
+   36|    411|    case "=":
+   37|     81|      advance()
+   38|     81|      return .equals
+   39|    411|    case ":":
+   40|      2|      advance()
+   41|      2|      return .colon
+   42|    411|    case "+":
+   43|      0|      advance()
+   44|      0|      return .plus
+   45|    411|    case "!":
+   46|      0|      advance()
+   47|      0|      return .bang
+   48|    411|    case "\"":
+   49|     15|      return try handleQuotedString()
+   50|    411|    case "#", ";": return handleComment()
+                  ^10
+   51|    411|    case "\n":
+   52|    110|      advance()
+   53|    110|      return .newline
+   54|    411|    default:
+   55|    151|      guard isSupportedCharacter else {
+   56|      0|        throw TokenizerError.syntax(line: line, message: "Unexpected character: \(current)")
+   57|    151|      }
+   58|    151|      return handleString()
+   59|    411|    }
+   60|    411|  }
+   61|       |
+   62|  2.00k|  private mutating func advance() {
+   63|  2.00k|    if current == "\n" { line += 1 }
+                                     ^110
+   64|  2.00k|    currentIndex = input.index(after: currentIndex)
+   65|  2.00k|  }
+   66|       |
+   67|    439|  private mutating func skipWhitespace() {
+   68|    495|    while currentIndex < input.endIndex, current.isWhitespace, !current.isNewline {
+   69|     56|      advance()
+   70|    439|    }
+   71|    439|  }
+   72|       |
+   73|     15|  private mutating func handleQuotedString() throws(TokenizerError) -> Token {
+   74|     15|    var stringValue = ""
+   75|     15|
+   76|     15|    advance()
+   77|     15|
+   78|    191|    while currentIndex < input.endIndex {
+   79|    189|      let char = current
+   80|    189|
+   81|    189|      if char == "\"" { // End quote
+   82|     13|        advance()
+   83|     13|        return .string(stringValue)
+   84|    176|      }
+   85|    176|
+   86|    176|      if char == "\\" {
+   87|      6|        advance()
+   88|      6|        if currentIndex < input.endIndex {
+   89|      6|          let escaped = current
+   90|      6|          switch escaped {
+   91|      6|          case "n": stringValue.append("\n")
+                        ^3
+   92|      6|          case "t": stringValue.append("\t")
+                        ^0
+   93|      6|          case "r": stringValue.append("\r")
+                        ^0
+   94|      6|          case "\"": stringValue.append("\"")
+                        ^2
+   95|      6|          case "\\": stringValue.append("\\")
+                        ^1
+   96|      6|          default: stringValue.append(escaped)
+                        ^0
+   97|      6|          }
+   98|      6|          advance()
+   99|      6|        }
+  100|      6|        continue
+  101|    170|      }
+  102|    170|
+  103|    170|      stringValue.append(char)
+  104|    170|      advance()
+  105|    170|    }
+  106|      2|
+  107|      2|    throw TokenizerError.unterminatedString(line: line)
+  108|     15|  }
+  109|       |
+  110|    150|  private mutating func handleString() -> Token {
+  111|    150|    let start = currentIndex
+  112|    150|
+  113|  1.13k|    while currentIndex < input.endIndex {
+  114|  1.11k|      if !isSupportedCharacter || current == "\n" {
+                                                ^983
+  115|    129|        let value = input[start ..< currentIndex]
+  116|    129|        return .string(String(value).trimmingCharacters(in: .whitespaces))
+  117|    982|      }
+  118|    982|      advance()
+  119|    982|    }
+  120|     21|
+  121|     21|    let value = input[start ..< currentIndex]
+  122|     21|    return .string(String(value).trimmingCharacters(in: .whitespaces))
+  123|    150|  }
+  124|       |
+  125|     10|  private mutating func handleComment() -> Token {
+  126|     10|    let start = currentIndex
+  127|     10|    advance()
+  128|     10|
+  129|    159|    while currentIndex < input.endIndex, current != "\n" {
+  130|    149|      advance()
+  131|    149|    }
+  132|     10|
+  133|     10|    let value = input[start ..< currentIndex]
+  134|     10|
+  135|     10|    return .comment(String(value).trimmingCharacters(in: .whitespaces))
+  136|     10|  }
+  137|       |
+  138|     42|  private mutating func handleSection() throws(TokenizerError) -> Token {
+  139|     42|    advance()
+  140|     42|
+  141|     42|    let start = currentIndex
+  142|     42|    var didSectionEnd = false
+  143|     42|
+  144|    367|    while currentIndex < input.endIndex, current != "\n" {
+  145|    365|      if current == "]" {
+  146|     40|        didSectionEnd = true
+  147|     40|        break
+  148|    325|      }
+  149|    325|
+  150|    325|      if current == "\n" {
+  151|      0|        throw TokenizerError.unterminatedSection(line: line)
+  152|    325|      }
+  153|    325|
+  154|    325|      advance()
+  155|    325|    }
+  156|     42|
+  157|     42|    if !didSectionEnd {
+  158|      2|      throw TokenizerError.unterminatedSection(line: line)
+  159|     40|    }
+  160|     40|
+  161|     40|    let value = input[start ..< currentIndex]
+  162|     40|    advance()
+  163|     40|
+  164|     40|    return .section(String(value))
+  165|     42|  }
+  166|       |}
+
+/Users/pt/Source/Swift/Winnie/Sources/Winnie/Config/SectionProxy.swift:
+    1|       |import OrderedCollections
+    2|       |
+    3|       |public struct SectionProxy {
+    4|       |  let section: String
+    5|       |  unowned var parser: ConfigParser
+    6|       |
+    7|      6|  init(section: String, parser: ConfigParser) {
+    8|      6|    self.section = section
+    9|      6|    self.parser = parser
+   10|      6|  }
+   11|       |
+   12|       |  public subscript(option: String) -> INIValue? {
+   13|      1|    get { parser[section, option] }
+   14|      1|    set { parser[section, option] = newValue }
+   15|       |  }
+   16|       |
+   17|      1|  public var options: OrderedSet<String> { parser.config[section]?.keys ?? [] }
+                                                                                         ^0
+   18|       |
+   19|      1|  public var values: [INIValue] {
+   20|      1|    if let valuesCollection = parser.config[section]?.values {
+   21|      1|      return Array(valuesCollection)
+   22|      1|    }
+   23|      0|    return []
+   24|      1|  }
+   25|       |}
+   26|       |
+   27|       |public struct SectionProxyIterator: IteratorProtocol {
+   28|       |  public typealias Element = SectionProxy
+   29|       |
+   30|       |  unowned let parser: ConfigParser
+   31|       |  var keyIterator: IndexingIterator<OrderedSet<String>>
+   32|       |
+   33|      1|  init(parser: ConfigParser) {
+   34|      1|    self.parser = parser
+   35|      1|    keyIterator = parser.config.keys.makeIterator()
+   36|      1|  }
+   37|       |
+   38|      4|  public mutating func next() -> Element? {
+   39|      4|    guard let sectionKey = keyIterator.next() else { return nil }
+                                                                 ^1
+   40|      3|    return SectionProxy(section: sectionKey, parser: parser)
+   41|      4|  }
+   42|       |}
+   43|       |
+   44|       |public struct SectionProxySequence: Sequence {
+   45|       |  public typealias Element = SectionProxy
+   46|       |  public typealias Iterator = SectionProxyIterator
+   47|       |
+   48|       |  unowned let parser: ConfigParser
+   49|       |
+   50|      1|  init(parser: ConfigParser) {
+   51|      1|    self.parser = parser
+   52|      1|  }
+   53|       |
+   54|      1|  public func makeIterator() -> Iterator { SectionProxyIterator(parser: parser) }
+   55|       |}
+
+/Users/pt/Source/Swift/Winnie/Sources/Winnie/Config/ConfigParserOptions.swift:
+    1|       |public enum AssignmentCharacter: String {
+    2|       |  case equals = "="
+    3|       |  case colon = ":"
+    4|       |}
+    5|       |
+    6|       |public struct ConfigParserOptions {
+    7|       |  public let defaultSection: String
+    8|       |  public let assignmentCharacter: AssignmentCharacter
+    9|       |  public let leadingSpaces: Int
+   10|       |  public let trailingSpaces: Int
+   11|       |
+   12|       |  public init(
+   13|       |    defaultSection: String = "DEFAULT",
+   14|       |    assignmentCharacter: AssignmentCharacter = .equals,
+   15|       |    leadingSpaces: Int? = nil,
+   16|       |    trailingSpaces: Int? = nil
+   17|     49|  ) {
+   18|     49|    self.defaultSection = defaultSection
+   19|     49|    self.assignmentCharacter = assignmentCharacter
+   20|     49|
+   21|     49|    let defaultLeading = assignmentCharacter == .equals ? 1 : 0
+                                                                        ^48 ^1
+   22|     49|    let defaultTrailing = 1
+   23|     49|
+   24|     49|    let computedLeading = leadingSpaces ?? trailingSpaces ?? defaultLeading
+                                                         ^45               ^45
+   25|     49|    let computedTrailing = trailingSpaces ?? leadingSpaces ?? defaultTrailing
+                                                           ^46              ^45
+   26|     49|
+   27|     49|    self.leadingSpaces = computedLeading
+   28|     49|    self.trailingSpaces = computedTrailing
+   29|     49|  }
+   30|       |}
+
+/Users/pt/Source/Swift/Winnie/Sources/Winnie/Config/INI/INIValue+INIValueConvertible.swift:
+    1|       |extension INIValue: INIValueConvertible {
+    2|      0|  public func into() -> INIValue { self }
+    3|      0|  public static func from(_ value: INIValue) throws(ConfigParserError) -> Self { value }
+    4|       |}
+
+/Users/pt/Source/Swift/Winnie/Sources/Winnie/Config/INI/INIValue+ExpressibleByLiteral.swift:
+    1|       |extension INIValue: ExpressibleByStringLiteral {
+    2|     18|  public init(stringLiteral value: String) { self = .string(value) }
+    3|       |}
+    4|       |
+    5|       |extension INIValue: ExpressibleByIntegerLiteral {
+    6|      4|  public init(integerLiteral value: Int) { self = .int(value) }
+    7|       |}
+    8|       |
+    9|       |extension INIValue: ExpressibleByBooleanLiteral {
+   10|      2|  public init(booleanLiteral value: Bool) { self = .bool(value) }
+   11|       |}
+   12|       |
+   13|       |extension INIValue: ExpressibleByFloatLiteral {
+   14|      0|  public init(floatLiteral value: Double) { self = .double(value) }
+   15|       |}
+
+/Users/pt/Source/Swift/Winnie/Sources/Winnie/Config/INI/Bool+INIValueConvertible.swift:
+    1|       |extension Bool: INIValueConvertible {
+    2|      3|  public func into() -> INIValue { .bool(self) }
+    3|       |
+    4|     14|  public static func from(_ value: INIValue) throws(ConfigParserError) -> Bool {
+    5|     14|    switch value {
+    6|     14|    case let .bool(bool): bool
+                  ^3
+    7|     14|    case let .string(string):
+    8|      9|      switch string.lowercased() {
+    9|      9|      case "true", "yes", "1", "on": true
+                    ^6
+   10|      9|      case "false", "no", "0", "off": false
+                    ^2
+   11|      9|      default: throw ConfigParserError.valueError("Cannot convert to Bool: \(string)")
+                    ^1
+   12|      9|      }
+   13|     14|    case let .double(t): t > 0.0
+                  ^0
+   14|     14|    case let .int(i): i > 0
+                  ^2
+   15|     14|    }
+   16|     13|  }
+   17|       |}
+
+/Users/pt/Source/Swift/Winnie/Sources/Winnie/Config/INI/Double+INIValueConvertible.swift:
+    1|       |extension Double: INIValueConvertible {
+    2|      2|  public func into() -> INIValue { .double(self) }
+    3|       |
+    4|      4|  public static func from(_ value: INIValue) throws(ConfigParserError) -> Double {
+    5|      4|    switch value {
+    6|      4|    case let .double(double): return double
+                  ^2
+    7|      4|    case let .int(int): return Double(int)
+                  ^0
+    8|      4|    case let .bool(bool): return !bool ? 0.0 : 1.0
+                  ^0                                   ^0    ^0
+    9|      4|    case let .string(string):
+   10|      2|      guard let result = Double(string) else {
+   11|      0|        throw ConfigParserError.valueError("Cannot convert to Double: \(string)")
+   12|      2|      }
+   13|      2|      return result
+   14|      4|    }
+   15|      4|  }
+   16|       |}
+
+/Users/pt/Source/Swift/Winnie/Sources/Winnie/Config/INI/Int+INIValueConvertible.swift:
+    1|       |extension Int: INIValueConvertible {
+    2|     13|  public func into() -> INIValue { .int(self) }
+    3|       |
+    4|     12|  public static func from(_ value: INIValue) throws(ConfigParserError) -> Int {
+    5|     12|    switch value {
+    6|     12|    case let .int(int): return int
+                  ^2
+    7|     12|    case let .bool(bool): return !bool ? 0 : 1
+                  ^0                                   ^0  ^0
+    8|     12|    case let .double(double): return Int(double)
+                  ^0
+    9|     12|    case let .string(string):
+   10|     10|      guard let result = Int(string) else {
+   11|      2|        throw ConfigParserError.valueError("Cannot convert to Int: \(string)")
+   12|      8|      }
+   13|      8|      return result
+   14|     12|    }
+   15|     12|  }
+   16|       |}
+
+/Users/pt/Source/Swift/Winnie/Sources/Winnie/Config/INI/String+INIValueConvertible.swift:
+    1|       |extension String: INIValueConvertible {
+    2|     80|  public func into() -> INIValue { .string(self) }
+    3|       |
+    4|     30|  public static func from(_ value: INIValue) throws(ConfigParserError) -> String {
+    5|     30|    switch value {
+    6|     30|    case let .string(string): string
+    7|     30|    default: value.description
+                  ^0
+    8|     30|    }
+    9|     30|  }
+   10|       |}
+
+/Users/pt/Source/Swift/Winnie/Sources/Winnie/Config/INI/INIValue+CustomStringConvertible.swift:
+    1|       |extension INIValue: CustomStringConvertible {
+    2|     67|  public var description: String {
+    3|     67|    switch self {
+    4|     67|    case let .string(value): value
+                  ^50
+    5|     67|    case let .int(value): String(value)
+                  ^16
+    6|     67|    case let .double(value): String(value)
+                  ^0
+    7|     67|    case let .bool(value): value ? "True" : "False"
+                  ^1                             ^0       ^1
+    8|     67|    }
+    9|     67|  }
+   10|       |}
+
+/Users/pt/Source/Swift/Winnie/Sources/Winnie/Config/INI/INIValue.swift:
+    1|       |public enum INIValue: Equatable {
+    2|       |  case string(String)
+    3|       |  case int(Int)
+    4|       |  case double(Double)
+    5|       |  case bool(Bool)
+    6|       |
+    7|      0|  public init(from string: String) {
+    8|      0|    if let anInt = Int(string) {
+    9|      0|      self = .int(anInt)
+   10|      0|      return
+   11|      0|    }
+   12|      0|
+   13|      0|    if let aDouble = Double(string) {
+   14|      0|      self = .double(aDouble)
+   15|      0|      return
+   16|      0|    }
+   17|      0|
+   18|      0|    switch string.lowercased() {
+   19|      0|    case "true", "yes", "1", "on":
+   20|      0|      self = .bool(true)
+   21|      0|      return
+   22|      0|    case "false", "no", "0", "off":
+   23|      0|      self = .bool(false)
+   24|      0|      return
+   25|      0|    default:
+   26|      0|      self = .string(string)
+   27|      0|    }
+   28|      0|  }
+   29|       |
+   30|      2|  public var intValue: Int? { try? Int.from(self) }
+   31|      0|  public var doubleValue: Double? { try? Double.from(self) }
+   32|      0|  public var boolValue: Bool? { try? Bool.from(self) }
+   33|      5|  public var stringValue: String? { try? String.from(self) }
+   34|       |}
+
+/Users/pt/Source/Swift/Winnie/Sources/Winnie/Config/ConfigParser.swift:
+    1|       |import Foundation
+    2|       |import OrderedCollections
+    3|       |
+    4|       |public typealias Section = OrderedDictionary<String, INIValue>
+    5|       |public typealias Config = OrderedDictionary<String, Section>
+    6|       |
+    7|       |public final class ConfigParser {
+    8|     49|  var config: Config = [:]
+    9|       |  private let options: ConfigParserOptions
+   10|       |
+   11|     49|  public init(_ options: ConfigParserOptions = ConfigParserOptions()) {
+   12|     49|    self.options = options
+   13|     49|    config[self.options.defaultSection] = [:]
+   14|     49|  }
+   15|       |
+   16|      0|  public init(file path: String, options: ConfigParserOptions) throws {
+   17|      0|    self.options = options
+   18|      0|    config[self.options.defaultSection] = [:]
+   19|      0|    try readFile(path)
+   20|      0|  }
+   21|       |
+   22|      0|  public init(input string: String, options: ConfigParserOptions) throws {
+   23|      0|    self.options = options
+   24|      0|    config[self.options.defaultSection] = [:]
+   25|      0|    try read(string)
+   26|      0|  }
+   27|       |
+   28|      1|  public var sections: SectionProxySequence { SectionProxySequence(parser: self) }
+   29|     18|  public var sectionNames: [String] { Array(config.keys) }
+   30|       |
+   31|      3|  public subscript(section: String) -> SectionProxy? {
+   32|      3|    guard config[section] != nil else { return nil }
+                                                    ^0
+   33|      3|    return SectionProxy(section: section, parser: self)
+   34|      3|  }
+   35|       |
+   36|       |  public subscript(option: String) -> INIValue? {
+   37|      1|    get {
+   38|      1|      config[self.options.defaultSection]?[option]
+   39|      1|    }
+   40|       |
+   41|      6|    set {
+   42|      6|      if config[self.options.defaultSection] == nil {
+   43|      0|        config[self.options.defaultSection] = [:]
+   44|      0|      }
+   45|      6|
+   46|      6|      if let newValue {
+   47|      6|        config[self.options.defaultSection]?[option] = newValue
+   48|      6|        return
+   49|      6|      }
+   50|      0|
+   51|      0|      config[self.options.defaultSection]?.removeValue(forKey: option)
+   52|      0|    }
+   53|       |  }
+   54|       |
+   55|       |  public subscript(section: String, option: String) -> INIValue? {
+   56|     13|    get {
+   57|     13|      if let sectionValue = config[section]?[option] {
+   58|     12|        return sectionValue
+   59|     12|      }
+   60|      1|
+   61|      1|      if section != self.options.defaultSection {
+   62|      1|        return config[self.options.defaultSection]?[option]
+   63|      1|      }
+   64|      0|
+   65|      0|      return nil
+   66|     13|    }
+   67|       |
+   68|     12|    set {
+   69|     12|      if config[section] == nil {
+   70|      2|        config[section] = [:]
+   71|      2|      }
+   72|     12|
+   73|     12|      if let newValue {
+   74|     12|        config[section]?[option] = newValue
+   75|     12|        return
+   76|     12|      }
+   77|      0|
+   78|      0|      config[section]?.removeValue(forKey: option)
+   79|      0|    }
+   80|       |  }
+   81|       |
+   82|      0|  public func items(section: String) throws(ConfigParserError) -> any MutableCollection {
+   83|      0|    if let values = config[section] {
+   84|      0|      return values.values
+   85|      0|    }
+   86|      0|
+   87|      0|    throw .sectionNotFound(section)
+   88|      0|  }
+   89|       |
+   90|     58|  public func get<T: INIValueConvertible>(section: String, option: String) throws(ConfigParserError) -> T {
+   91|     58|    if let section = config[section] {
+   92|     56|      guard let value = section[option] else { throw .optionNotFound(option) }
+                                                           ^3
+   93|     53|      return try T.from(value)
+   94|     56|    }
+   95|      2|
+   96|      2|    throw .sectionNotFound(section)
+   97|     58|  }
+   98|       |
+   99|      4|  public func get<T: INIValueConvertible>(option: String) throws(ConfigParserError) -> T {
+  100|      4|    try get(section: self.options.defaultSection, option: option)
+  101|      4|  }
+  102|       |
+  103|      1|  public func get<T: INIValueConvertible>(section: String, option: String, default defaultValue: T) -> T {
+  104|      1|    (try? get(section: section, option: option)) ?? defaultValue
+  105|      1|  }
+  106|       |
+  107|      0|  public func get<T: INIValueConvertible>(option: String, default defaultValue: T) -> T {
+  108|      0|    get(section: self.options.defaultSection, option: option, default: defaultValue)
+  109|      0|  }
+  110|       |
+  111|      2|  public func getBool(section: String, option: String) throws(ConfigParserError) -> Bool {
+  112|      2|    try get(section: section, option: option)
+  113|      1|  }
+  114|       |
+  115|      3|  public func getString(section: String, option: String) throws(ConfigParserError) -> String {
+  116|      3|    try get(section: section, option: option)
+  117|      3|  }
+  118|       |
+  119|      4|  public func getInt(section: String, option: String) throws(ConfigParserError) -> Int {
+  120|      4|    try get(section: section, option: option)
+  121|      1|  }
+  122|       |
+  123|      1|  public func getDouble(section: String, option: String) throws(ConfigParserError) -> Double {
+  124|      1|    try get(section: section, option: option)
+  125|      1|  }
+  126|       |
+  127|     37|  public func set(section: String, option: String, value: some INIValueConvertible) throws(ConfigParserError) {
+  128|     37|    if config[section] == nil {
+  129|      0|      throw ConfigParserError.sectionNotFound(section)
+  130|     37|    }
+  131|     37|
+  132|     37|    config[section]![option] = value.into()
+  133|     37|  }
+  134|       |
+  135|      5|  public func set(option: String, value: some INIValueConvertible) throws(ConfigParserError) {
+  136|      5|    try set(section: self.options.defaultSection, option: option, value: value)
+  137|      5|  }
+  138|       |
+  139|     29|  public func addSection(_ section: String) throws(ConfigParserError) {
+  140|     29|    guard section != self.options.defaultSection else {
+  141|      1|      throw ConfigParserError.valueError("Cannot add default section.")
+  142|     28|    }
+  143|     28|
+  144|     28|    guard config[section] == nil else {
+  145|      1|      throw ConfigParserError.valueError("Section \(section) already exists.")
+  146|     27|    }
+  147|     27|
+  148|     27|    config[section] = [:]
+  149|     27|  }
+  150|       |
+  151|      0|  public func removeSection(_ section: String) throws(ConfigParserError) {
+  152|      0|    guard section != self.options.defaultSection else {
+  153|      0|      throw ConfigParserError.valueError("Cannot remove default section.")
+  154|      0|    }
+  155|      0|
+  156|      0|    config.removeValue(forKey: section)
+  157|      0|  }
+  158|       |
+  159|      9|  public func hasSection(_ section: String) -> Bool { config[section] != nil }
+  160|       |
+  161|      1|  public func readFile(_ path: String) throws {
+  162|      1|    let contents = try String(contentsOfFile: path)
+  163|      1|    try read(contents)
+  164|      1|  }
+  165|       |
+  166|     21|  public func read(_ contents: String) throws {
+  167|     21|    var tokenizer = Tokenizer(contents)
+  168|     21|    let tokens = try tokenizer.tokenize()
+  169|     21|    var index = tokens.startIndex
+  170|     21|    var currentSection = self.options.defaultSection
+  171|     21|    var newConfig: Config = [self.options.defaultSection: [:]]
+  172|     21|
+  173|    222|    while index < tokens.endIndex {
+  174|    200|      let token = tokens[index]
+  175|    200|
+  176|    200|      switch token {
+  177|    200|      case let .section(section):
+  178|     31|        currentSection = section
+  179|     31|        if currentSection != self.options.defaultSection {
+  180|     29|          newConfig[currentSection] = [:]
+  181|     29|        }
+  182|     31|
+  183|     31|        index = tokens.index(after: index)
+  184|    200|
+  185|    200|      case let .string(option):
+  186|     62|        index = tokens.index(after: index)
+  187|     62|
+  188|     62|        if index < tokens.endIndex, isAssignmentToken(tokens[index]) {
+  189|     62|          index = tokens.index(after: index)
+  190|     62|
+  191|     62|          let value = if index < tokens.endIndex, case let .string(string) = tokens[index] {
+  192|     59|            string.trimmingCharacters(in: .whitespacesAndNewlines)
+  193|     59|          } else {
+  194|      3|            ""
+  195|      3|          }
+  196|     62|
+  197|     62|          newConfig[currentSection]?[option] = value.into()
+  198|     62|
+  199|     62|          if index < tokens.endIndex, case .string = tokens[index] {
+  200|     59|            index = tokens.index(after: index)
+  201|     59|          }
+  202|     62|        } else {
+  203|      0|          newConfig[currentSection]?[option] = ""
+  204|      0|        }
+  205|    200|
+  206|    200|      default:
+  207|    108|        index = tokens.index(after: index)
+  208|    201|      }
+  209|    201|    }
+  210|     22|
+  211|     22|    config = newConfig
+  212|     22|  }
+  213|       |
+  214|      1|  public func writeFile(_ path: String) throws {
+  215|      1|    try write().write(toFile: path, atomically: true, encoding: .utf8)
+  216|      1|  }
+  217|       |
+  218|     13|  public func write() -> String {
+  219|     13|    let leadingSpaces = String(repeating: " ", count: self.options.leadingSpaces)
+  220|     13|    let trailingSpaces = String(repeating: " ", count: self.options.trailingSpaces)
+  221|     13|
+  222|     13|    let assignment = "\(leadingSpaces)\(self.options.assignmentCharacter.rawValue)\(trailingSpaces)"
+  223|     13|
+  224|     13|    var output = ""
+  225|     13|
+  226|     13|    if let defaultSection = config[self.options.defaultSection], !defaultSection.isEmpty {
+  227|      6|      output += "[\(self.options.defaultSection)]\n"
+  228|     24|      for (option, value) in defaultSection {
+  229|     24|        output += "\(option)\(assignment)\(value.description)\n"
+  230|     24|      }
+  231|      6|
+  232|      6|      // Only add a newline if defaultSection isn't the only section and isnt empty
+  233|      6|      if !defaultSection.isEmpty, config.keys.count > 1 {
+  234|      6|        output += "\n"
+  235|      6|      }
+  236|      6|    }
+  237|     13|
+  238|     36|    for section in sectionNames where section != self.options.defaultSection {
+  239|     36|      output += "[\(section)]\n"
+  240|     36|
+  241|     36|      if let sectionData = config[section] {
+  242|     43|        for (option, value) in sectionData {
+  243|     43|          output += "\(option)\(assignment)\(value.description)\n"
+  244|     43|        }
+  245|     23|      }
+  246|     36|      output += "\n"
+  247|     36|    }
+  248|     13|
+  249|     13|    return output.trimmingCharacters(in: .newlines)
+  250|     13|  }
+  251|       |
+  252|     62|  private func isAssignmentToken(_ token: Token) -> Bool {
+  253|     62|    switch token {
+  254|     62|    case .equals, .colon: true
+  255|     62|    default: false
+                  ^0
+  256|     62|    }
+  257|     62|  }
+  258|       |}
+

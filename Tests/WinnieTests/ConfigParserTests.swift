@@ -273,7 +273,8 @@ struct ConfigParserTests {
   }
 
   @Test func writeExample() throws {
-    let parser = ConfigParser()
+    let opts = ConfigParserOptions(leadingSpaces: 0, trailingSpaces: 0)
+    let parser = ConfigParser(opts)
 
     try parser.addSection("URL")
     try parser.set(section: "URL", option: "Protocol", value: "deusex")
@@ -283,7 +284,7 @@ struct ConfigParserTests {
     try parser.addSection("Engine.GameInfo")
     try parser.set(section: "Engine.GameInfo", option: "bLowGore", value: false)
 
-    let result = parser.write(leadingSpaces: false)
+    let result = parser.write()
 
     let expected = """
     [URL]
@@ -423,10 +424,11 @@ struct ConfigParserTests {
     key3=42
     """
 
-    let parser1 = ConfigParser()
+    let opts = ConfigParserOptions(leadingSpaces: 0, trailingSpaces: 0)
+    let parser1 = ConfigParser(opts)
     try parser1.read(original)
 
-    let written = parser1.write(leadingSpaces: false)
+    let written = parser1.write()
 
     let parser2 = ConfigParser()
     try parser2.read(written)
@@ -620,7 +622,8 @@ struct ConfigParserTests {
   }
 
   @Test func testCustomDefaultSection() throws {
-    let parser = ConfigParser(defaultSection: "GLOBAL")
+    let opts = ConfigParserOptions(defaultSection: "GLOBAL")
+    let parser = ConfigParser(opts)
 
     #expect(parser.hasSection("GLOBAL"))
 
@@ -635,5 +638,103 @@ struct ConfigParserTests {
 
     #expect(debug == true)
     #expect(appName == "MyApp")
+  }
+
+  @Test func testCustomPadding() throws {
+    let opts = ConfigParserOptions(leadingSpaces: 4, trailingSpaces: 4)
+    let parser = ConfigParser(opts)
+
+    try parser.addSection("Test")
+    try parser.set(section: "Test", option: "key1", value: "value1")
+    try parser.set(section: "Test", option: "key2", value: 42)
+
+    let output = parser.write()
+    let expected = """
+    [Test]
+    key1    =    value1
+    key2    =    42
+    """
+
+    #expect(output == expected)
+  }
+
+  @Test func testAssignmentCharacterEquals() throws {
+    let opts = ConfigParserOptions(assignmentCharacter: .equals, leadingSpaces: 0)
+    let parser = ConfigParser(opts)
+
+    try parser.addSection("Test")
+    try parser.set(section: "Test", option: "key1", value: "value1")
+    try parser.set(section: "Test", option: "key2", value: 42)
+
+    let output = parser.write()
+    let expected = """
+    [Test]
+    key1=value1
+    key2=42
+    """
+
+    #expect(output == expected)
+  }
+
+  @Test func testAssignmentCharacterColon() throws {
+    let opts = ConfigParserOptions(assignmentCharacter: .colon)
+    let parser = ConfigParser(opts)
+
+    try parser.addSection("Test")
+    try parser.set(section: "Test", option: "key1", value: "value1")
+    try parser.set(section: "Test", option: "key2", value: 42)
+
+    let output = parser.write()
+    let expected = """
+    [Test]
+    key1: value1
+    key2: 42
+    """
+
+    #expect(output == expected)
+  }
+
+  @Test func testLeadingSpacesOnly() throws {
+    let opts = ConfigParserOptions(leadingSpaces: 3, trailingSpaces: nil)
+    let parser = ConfigParser(opts)
+
+    try parser.addSection("Test")
+    try parser.set(section: "Test", option: "key", value: "value")
+
+    let output = parser.write()
+    #expect(output.contains("key   =   value"))
+  }
+
+  @Test func testTrailingSpacesOnly() throws {
+    let opts = ConfigParserOptions(leadingSpaces: nil, trailingSpaces: 2)
+    let parser = ConfigParser(opts)
+
+    try parser.addSection("Test")
+    try parser.set(section: "Test", option: "key", value: "value")
+
+    let output = parser.write()
+    #expect(output.contains("key  =  value"))
+  }
+
+  @Test func testExplicitZeroSpacing() throws {
+    let opts = ConfigParserOptions(leadingSpaces: 0, trailingSpaces: 0)
+    let parser = ConfigParser(opts)
+
+    try parser.addSection("Test")
+    try parser.set(section: "Test", option: "key", value: "value")
+
+    let output = parser.write()
+    #expect(output.contains("key=value"))
+  }
+
+  @Test func testLeadingTrailingSpaces() throws {
+    let opts = ConfigParserOptions(leadingSpaces: 2, trailingSpaces: 4)
+    let parser = ConfigParser(opts)
+
+    try parser.addSection("Test")
+    try parser.set(section: "Test", option: "key", value: "value")
+
+    let output = parser.write()
+    #expect(output.contains("key  =    value"))
   }
 }

@@ -4,29 +4,24 @@ import OrderedCollections
 public typealias Section = OrderedDictionary<String, INIValue>
 public typealias Config = OrderedDictionary<String, Section>
 
-public enum AssignmentCharacter: String {
-  case equals = "="
-  case colon = ":"
-}
-
 public final class ConfigParser {
   var config: Config = [:]
-  private let defaultSection: String
+  private let options: ConfigParserOptions
 
-  public init(defaultSection: String = "DEFAULT") {
-    self.defaultSection = defaultSection
-    config[self.defaultSection] = [:]
+  public init(_ options: ConfigParserOptions = ConfigParserOptions()) {
+    self.options = options
+    config[self.options.defaultSection] = [:]
   }
 
-  public init(file path: String, defaultSection: String = "DEFAULT") throws {
-    self.defaultSection = defaultSection
-    config[self.defaultSection] = [:]
+  public init(file path: String, options: ConfigParserOptions) throws {
+    self.options = options
+    config[self.options.defaultSection] = [:]
     try readFile(path)
   }
 
-  public init(input string: String, defaultSection: String = "DEFAULT") throws {
-    self.defaultSection = defaultSection
-    config[self.defaultSection] = [:]
+  public init(input string: String, options: ConfigParserOptions) throws {
+    self.options = options
+    config[self.options.defaultSection] = [:]
     try read(string)
   }
 
@@ -39,21 +34,19 @@ public final class ConfigParser {
   }
 
   public subscript(option: String) -> INIValue? {
-    get {
-      config[self.defaultSection]?[option]
-    }
+    get { config[self.options.defaultSection]?[option] }
 
     set {
-      if config[self.defaultSection] == nil {
-        config[self.defaultSection] = [:]
+      if config[self.options.defaultSection] == nil {
+        config[self.options.defaultSection] = [:]
       }
 
       if let newValue {
-        config[self.defaultSection]?[option] = newValue
+        config[self.options.defaultSection]?[option] = newValue
         return
       }
 
-      config[self.defaultSection]?.removeValue(forKey: option)
+      config[self.options.defaultSection]?.removeValue(forKey: option)
     }
   }
 
@@ -63,8 +56,8 @@ public final class ConfigParser {
         return sectionValue
       }
 
-      if section != self.defaultSection {
-        return config[self.defaultSection]?[option]
+      if section != self.options.defaultSection {
+        return config[self.options.defaultSection]?[option]
       }
 
       return nil
@@ -102,7 +95,7 @@ public final class ConfigParser {
   }
 
   public func get<T: INIValueConvertible>(option: String) throws(ConfigParserError) -> T {
-    try get(section: self.defaultSection, option: option)
+    try get(section: self.options.defaultSection, option: option)
   }
 
   public func get<T: INIValueConvertible>(section: String, option: String, default defaultValue: T) -> T {
@@ -110,7 +103,7 @@ public final class ConfigParser {
   }
 
   public func get<T: INIValueConvertible>(option: String, default defaultValue: T) -> T {
-    get(section: self.defaultSection, option: option, default: defaultValue)
+    get(section: self.options.defaultSection, option: option, default: defaultValue)
   }
 
   public func getBool(section: String, option: String) throws(ConfigParserError) -> Bool {
@@ -138,11 +131,11 @@ public final class ConfigParser {
   }
 
   public func set(option: String, value: some INIValueConvertible) throws(ConfigParserError) {
-    try set(section: self.defaultSection, option: option, value: value)
+    try set(section: self.options.defaultSection, option: option, value: value)
   }
 
   public func addSection(_ section: String) throws(ConfigParserError) {
-    guard section != self.defaultSection else {
+    guard section != self.options.defaultSection else {
       throw ConfigParserError.valueError("Cannot add default section.")
     }
 
@@ -154,7 +147,7 @@ public final class ConfigParser {
   }
 
   public func removeSection(_ section: String) throws(ConfigParserError) {
-    guard section != self.defaultSection else {
+    guard section != self.options.defaultSection else {
       throw ConfigParserError.valueError("Cannot remove default section.")
     }
 
@@ -172,8 +165,8 @@ public final class ConfigParser {
     var tokenizer = Tokenizer(contents)
     let tokens = try tokenizer.tokenize()
     var index = tokens.startIndex
-    var currentSection = self.defaultSection
-    var newConfig: Config = [self.defaultSection: [:]]
+    var currentSection = self.options.defaultSection
+    var newConfig: Config = [self.options.defaultSection: [:]]
 
     while index < tokens.endIndex {
       let token = tokens[index]
@@ -181,7 +174,7 @@ public final class ConfigParser {
       switch token {
       case let .section(section):
         currentSection = section
-        if currentSection != self.defaultSection {
+        if currentSection != self.options.defaultSection {
           newConfig[currentSection] = [:]
         }
 
@@ -190,7 +183,7 @@ public final class ConfigParser {
       case let .string(option):
         index = tokens.index(after: index)
 
-        if index < tokens.endIndex, tokens[index] == .equals || tokens[index] == .colon {
+        if index < tokens.endIndex, isAssignmentToken(tokens[index]) {
           index = tokens.index(after: index)
 
           let value = if index < tokens.endIndex, case let .string(string) = tokens[index] {
@@ -216,20 +209,20 @@ public final class ConfigParser {
     config = newConfig
   }
 
-  public func writeFile(_ path: String, assignment: AssignmentCharacter = .equals, leadingSpaces: Bool = true) throws {
-    try write(
-      assignment: assignment, leadingSpaces: leadingSpaces
-    ).write(toFile: path, atomically: true, encoding: .utf8)
+  public func writeFile(_ path: String) throws {
+    try write().write(toFile: path, atomically: true, encoding: .utf8)
   }
 
-  public func write(assignment: AssignmentCharacter = .equals, leadingSpaces: Bool = true) -> String {
-    let spaces = leadingSpaces ? " " : ""
-    let assignment = "\(spaces)\(assignment.rawValue)\(spaces)"
+  public func write() -> String {
+    let leadingSpaces = String(repeating: " ", count: self.options.leadingSpaces)
+    let trailingSpaces = String(repeating: " ", count: self.options.trailingSpaces)
+
+    let assignment = "\(leadingSpaces)\(self.options.assignmentCharacter.rawValue)\(trailingSpaces)"
 
     var output = ""
 
-    if let defaultSection = config[self.defaultSection], !defaultSection.isEmpty {
-      output += "[DEFAULT]\n"
+    if let defaultSection = config[self.options.defaultSection], !defaultSection.isEmpty {
+      output += "[\(self.options.defaultSection)]\n"
       for (option, value) in defaultSection {
         output += "\(option)\(assignment)\(value.description)\n"
       }
@@ -240,7 +233,7 @@ public final class ConfigParser {
       }
     }
 
-    for section in sectionNames where section != self.defaultSection {
+    for section in sectionNames where section != self.options.defaultSection {
       output += "[\(section)]\n"
 
       if let sectionData = config[section] {
@@ -252,5 +245,12 @@ public final class ConfigParser {
     }
 
     return output.trimmingCharacters(in: .newlines)
+  }
+
+  private func isAssignmentToken(_ token: Token) -> Bool {
+    switch token {
+    case .equals, .colon: true
+    default: false
+    }
   }
 }
