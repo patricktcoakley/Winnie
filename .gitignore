@@ -7,3 +7,20 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 .vscode
+
+# Test Coverage
+coverage-report/
+*.profdata
+*.profraw
+xcov_report/
+coverage.xml
+coverage.json
+*.xccovreport
+*.xccovarchive
+*.lcov
+htmlcov/
+.coverage
+
+# DocC Documentation
+*.doccarchive
+.docc-build/

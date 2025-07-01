@@ -1,0 +1,7 @@
+--binarygrouping none 
+--decimalgrouping none 
+--hexgrouping none 
+--indent 2 
+--octalgrouping none 
+--semicolons never 
+--wrapparameters before-first

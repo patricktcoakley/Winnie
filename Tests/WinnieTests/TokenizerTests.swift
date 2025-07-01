@@ -2,6 +2,8 @@ import Testing
 @testable import Winnie
 
 struct TokenizerTests {
+  // MARK: - String Tokenization Tests
+
   @Test func testSimpleString() throws {
     var tokenizer = Tokenizer("\"Hello, world!\"")
     let token = try tokenizer.scan()
@@ -31,6 +33,8 @@ struct TokenizerTests {
     let token = try tokenizer.scan()
     #expect(token == .eof)
   }
+
+  // MARK: - Error Handling Tests
 
   @Test func testUnterminatedString() throws {
     var tokenizer = Tokenizer("\"Unfinished")
@@ -68,6 +72,8 @@ struct TokenizerTests {
     }
   }
 
+  // MARK: - Option-Value Pair Tests
+
   @Test func testSimpleKeyValue() throws {
     var tokenizer = Tokenizer("name = John")
     let key = try tokenizer.scan()
@@ -78,6 +84,8 @@ struct TokenizerTests {
     #expect(equals == .equals)
     #expect(value == .string("John"))
   }
+
+  // MARK: - Comment Tests
 
   @Test func testCommentWithHash() throws {
     var tokenizer = Tokenizer("# this is a comment")
@@ -107,6 +115,8 @@ struct TokenizerTests {
     ]
     #expect(tokens == expected)
   }
+
+  // MARK: - Section Tests
 
   @Test func testSectionHeader() throws {
     var tokenizer = Tokenizer("[section]")
@@ -157,6 +167,8 @@ struct TokenizerTests {
 
     #expect(tokens == expected)
   }
+
+  // MARK: - Complex Integration Tests
 
   @Test func testSections() throws {
     let input = #"""

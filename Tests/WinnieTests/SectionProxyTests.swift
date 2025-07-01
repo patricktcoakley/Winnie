@@ -2,6 +2,8 @@ import Testing
 @testable import Winnie
 
 struct SectionProxyTests {
+  // MARK: - Subscript and Property Tests
+
   @Test func sectionProxySubscript() throws {
     let parser = ConfigParser()
     try parser.addSection("test")
@@ -45,6 +47,8 @@ struct SectionProxyTests {
     }
   }
 
+  // MARK: - Iteration Tests
+
   @Test func sectionProxyIteration() throws {
     let parser = ConfigParser()
     try parser.addSection("section1")
@@ -60,5 +64,36 @@ struct SectionProxyTests {
     #expect(sections.contains("DEFAULT"))
     #expect(sections.contains("section1"))
     #expect(sections.contains("section2"))
+  }
+
+  @Test func sectionProxyOptionValueIteration() throws {
+    let parser = ConfigParser()
+    try parser.addSection("test")
+    parser["test", "host"] = "localhost"
+    parser["test", "port"] = 5432
+    parser["test", "ssl"] = true
+
+    if let proxy: SectionProxy = parser["test"] {
+      var pairs: [SectionPair] = []
+      for (option, value) in proxy {
+        pairs.append((option, value))
+      }
+
+      #expect(pairs.count == 3)
+
+      // Check that all expected options are present
+      let options = pairs.map(\.option)
+      #expect(options.contains("host"))
+      #expect(options.contains("port"))
+      #expect(options.contains("ssl"))
+
+      // Check specific values
+      let values = Dictionary(uniqueKeysWithValues: pairs.map { ($0.option, $0.value) })
+      #expect(values["host"] == .string("localhost"))
+      #expect(values["port"] == .int(5432))
+      #expect(values["ssl"] == .bool(true))
+    } else {
+      Issue.record("Expected proxy to exist")
+    }
   }
 }

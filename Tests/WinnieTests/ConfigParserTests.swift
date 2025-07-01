@@ -4,10 +4,60 @@ import Testing
 @testable import Winnie
 
 struct ConfigParserTests {
+  // MARK: - Initialization Tests
+
   @Test func testInitialization() {
     let parser = ConfigParser()
     #expect(parser.sectionNames.count == 1)
     #expect(parser.hasSection("DEFAULT"))
+  }
+
+  @Test func testInitFromFile() throws {
+    let fileManager = FileManager.default
+    let tempDirectory = fileManager.temporaryDirectory
+    let tempFile = tempDirectory.appendingPathComponent("test_init.ini")
+
+    let content = """
+    [test]
+    value = 42
+    flag = true
+    """
+
+    try content.write(to: tempFile, atomically: true, encoding: .utf8)
+    defer { try? fileManager.removeItem(at: tempFile) }
+
+    let parser = try ConfigParser(file: tempFile.path, options: ConfigParserOptions())
+    #expect(try parser.getString(section: "test", option: "value") == "42")
+    #expect(try parser.getBool(section: "test", option: "flag") == true)
+  }
+
+  @Test func testInitFromString() throws {
+    let content = """
+    [test]
+    value = hello world
+    number = 99
+    """
+
+    let parser = try ConfigParser(input: content, options: ConfigParserOptions())
+    #expect(try parser.getString(section: "test", option: "value") == "hello world")
+    #expect(try parser.getInt(section: "test", option: "number") == 99)
+  }
+
+  @Test func testInitFileNotFound() {
+    #expect(throws: Error.self) {
+      try ConfigParser(file: "/nonexistent/path/file.ini", options: ConfigParserOptions())
+    }
+  }
+
+  @Test func testInitStringWithMalformedContent() throws {
+    let malformed = """
+    [unclosed section
+    key = value
+    """
+
+    #expect(throws: Error.self) {
+      try ConfigParser(input: malformed, options: ConfigParserOptions())
+    }
   }
 
   @Test func testAddSection() throws {
@@ -29,6 +79,45 @@ struct ConfigParserTests {
     try parser.addSection("test")
     #expect(throws: ConfigParserError.valueError("Section test already exists.")) {
       try parser.addSection("test")
+    }
+  }
+
+  // MARK: - Section Management Tests
+
+  @Test func testRemoveSection() throws {
+    let parser = ConfigParser()
+    try parser.addSection("test")
+    #expect(parser.hasSection("test"))
+
+    try parser.removeSection("test")
+    #expect(!parser.hasSection("test"))
+  }
+
+  @Test func testRemoveSectionNotFound() throws {
+    let parser = ConfigParser()
+    try parser.removeSection("nonexistent")
+  }
+
+  @Test func testRemoveDefaultSectionFails() {
+    let parser = ConfigParser()
+    #expect(throws: ConfigParserError.valueError("Cannot remove default section.")) {
+      try parser.removeSection("DEFAULT")
+    }
+  }
+
+  @Test func testItems() throws {
+    let parser = ConfigParser()
+    try parser.set(section: "DEFAULT", option: "key1", value: "value1")
+    try parser.set(section: "DEFAULT", option: "key2", value: "value2")
+
+    let items = try parser.items(section: "DEFAULT")
+    #expect(items.count == 2)
+  }
+
+  @Test func testItemsSectionNotFound() {
+    let parser = ConfigParser()
+    #expect(throws: ConfigParserError.sectionNotFound("missing")) {
+      _ = try parser.items(section: "missing")
     }
   }
 
@@ -128,6 +217,31 @@ struct ConfigParserTests {
     value = True
     """#)
     #expect(try parser.getString(section: "data", option: "value") == "True")
+  }
+
+  // MARK: - Default Value Tests
+
+  @Test func testGetWithDefaultValue() throws {
+    let parser = ConfigParser()
+    try parser.addSection("test")
+    parser["test", "existing"] = INIValue(from: "found")
+
+    let existing: String = parser.get(section: "test", option: "existing", default: "default")
+    #expect(existing == "found")
+
+    let missing: String = parser.get(section: "test", option: "missing", default: "default")
+    #expect(missing == "default")
+  }
+
+  @Test func testGetDefaultSectionWithDefault() {
+    let parser = ConfigParser()
+    parser["existing"] = INIValue(from: "found")
+
+    let existing: String = parser.get(option: "existing", default: "default")
+    #expect(existing == "found")
+
+    let missing: String = parser.get(option: "missing", default: "default")
+    #expect(missing == "default")
   }
 
   @Test func testSetAndGetString() throws {
@@ -395,6 +509,45 @@ struct ConfigParserTests {
     #expect(doubleNeg == -3.14)
   }
 
+  // MARK: - Type Conversion Edge Cases
+
+  @Test func testIntegerOverflow() {
+    let parser = ConfigParser()
+    parser["test", "big"] = INIValue(from: "999999999999999999999") // Large number that won't parse as Int
+
+    #expect(throws: ConfigParserError.self) {
+      try parser.getInt(section: "test", option: "big")
+    }
+  }
+
+  @Test func testDoubleSpecialValues() throws {
+    let parser = ConfigParser()
+    parser["test", "inf"] = INIValue(from: "inf")
+    parser["test", "neginf"] = INIValue(from: "-inf")
+    parser["test", "nan"] = INIValue(from: "nan")
+
+    let inf = try parser.getDouble(section: "test", option: "inf")
+    let negInf = try parser.getDouble(section: "test", option: "neginf")
+    let nan = try parser.getDouble(section: "test", option: "nan")
+
+    #expect(inf.isInfinite)
+    #expect(negInf.isInfinite && negInf < 0)
+    #expect(nan.isNaN)
+  }
+
+  @Test func testBooleanEdgeCases() throws {
+    let parser = ConfigParser()
+    parser["test", "mixed1"] = INIValue(from: "TRUE")
+    parser["test", "mixed2"] = INIValue(from: "False")
+    parser["test", "numeric"] = INIValue(from: "2")
+    parser["test", "zero"] = INIValue(from: "0")
+
+    #expect(try parser.getBool(section: "test", option: "mixed1") == true)
+    #expect(try parser.getBool(section: "test", option: "mixed2") == false)
+    #expect(try parser.getBool(section: "test", option: "numeric") == true)
+    #expect(try parser.getBool(section: "test", option: "zero") == false)
+  }
+
   @Test func testCommentHandling() throws {
     let input = """
     [Section]
@@ -658,6 +811,24 @@ struct ConfigParserTests {
     #expect(output == expected)
   }
 
+  @Test func testCustomBooleanFormat() throws {
+    let opts = ConfigParserOptions(booleanFormat: ("yes", "no"))
+    let parser = ConfigParser(opts)
+
+    try parser.addSection("Test")
+    try parser.set(section: "Test", option: "enabled", value: true)
+    try parser.set(section: "Test", option: "debug", value: false)
+
+    let output = parser.write()
+    let expected = """
+    [Test]
+    enabled = yes
+    debug = no
+    """
+
+    #expect(output == expected)
+  }
+
   @Test func testAssignmentCharacterEquals() throws {
     let opts = ConfigParserOptions(assignmentCharacter: .equals, leadingSpaces: 0)
     let parser = ConfigParser(opts)
@@ -736,5 +907,310 @@ struct ConfigParserTests {
 
     let output = parser.write()
     #expect(output.contains("key  =    value"))
+  }
+
+  @Test func testHeaderComments() throws {
+    let input = """
+    # This is a header comment
+    # Another header comment
+
+    [section]
+    key = value
+    """
+
+    let expected = """
+    # This is a header comment
+    # Another header comment
+
+    [section]
+    key = value
+    """
+
+    let options = ConfigParserOptions(preserveComments: true)
+    let config = ConfigParser(options)
+    try config.read(input)
+
+    let output = config.write()
+    #expect(output == expected)
+  }
+
+  @Test func testCommentsBeforeSection() throws {
+    let input = """
+    [DEFAULT]
+    default_key = default_value
+
+    # Comment before database section
+    # Another comment
+    [database]
+    host = localhost
+    """
+
+    let expected = """
+    [DEFAULT]
+    default_key = default_value
+
+    # Comment before database section
+    # Another comment
+    [database]
+    host = localhost
+    """
+
+    let options = ConfigParserOptions(preserveComments: true)
+    let config = ConfigParser(options)
+    try config.read(input)
+
+    let output = config.write()
+    #expect(output == expected)
+  }
+
+  @Test func testCommentsBeforeOption() throws {
+    let input = """
+    [database]
+    # Comment before host option
+    host = localhost
+    # Comment before port option  
+    port = 5432
+    """
+
+    let options = ConfigParserOptions(preserveComments: true)
+    let config = ConfigParser(options)
+    try config.read(input)
+
+    let expected = """
+    [database]
+    # Comment before host option
+    host = localhost
+    # Comment before port option
+    port = 5432
+    """
+
+    let output = config.write()
+    #expect(output == expected)
+  }
+
+  @Test func testInlineComments() throws {
+    let input = """
+    [database]
+    host = localhost # inline comment
+    port = 5432 ; semicolon comment
+    """
+
+    let options = ConfigParserOptions(preserveComments: true)
+    let config = ConfigParser(options)
+    try config.read(input)
+
+    let expected = """
+    [database]
+    host = localhost # inline comment
+    port = 5432 ; semicolon comment
+    """
+
+    let output = config.write()
+    #expect(output == expected)
+  }
+
+  @Test func testMixedCommentTypes() throws {
+    let input = """
+    # File header comment
+
+    # Comment before DEFAULT section
+    [DEFAULT]
+    # Comment before default option
+    log_level = INFO # inline comment
+
+    # Comment before section
+    [database]
+    # Comment before host
+    host = localhost
+    port = 5432 # port comment
+    """
+
+    let options = ConfigParserOptions(preserveComments: true)
+    let config = ConfigParser(options)
+    try config.read(input)
+
+    let expected = """
+    # File header comment
+    # Comment before DEFAULT section
+
+    [DEFAULT]
+    # Comment before default option
+    log_level = INFO # inline comment
+
+    # Comment before section
+    [database]
+    # Comment before host
+    host = localhost
+    port = 5432 # port comment
+    """
+
+    let output = config.write()
+    #expect(output == expected)
+  }
+
+  @Test func testCommentPreservationDisabled() throws {
+    let input = """
+    # This comment should be ignored
+    [section]
+    # This too
+    key = value # and this
+    """
+
+    let options = ConfigParserOptions(preserveComments: false)
+    let config = ConfigParser(options)
+    try config.read(input)
+
+    let expected = """
+    [section]
+    key = value
+    """
+
+    let output = config.write()
+    #expect(output == expected)
+  }
+
+  @Test func testRoundtripCommentPreservation() throws {
+    let input = """
+    # Header comment
+
+    # Before DEFAULT
+    [DEFAULT]
+    # Before global option
+    global = value # inline
+
+    # Before section
+    [test]
+    # Before key
+    key = value
+    """
+
+    let options = ConfigParserOptions(preserveComments: true)
+    let config = ConfigParser(options)
+    try config.read(input)
+
+    let expected = """
+    # Header comment
+    # Before DEFAULT
+
+    [DEFAULT]
+    # Before global option
+    global = value # inline
+
+    # Before section
+    [test]
+    # Before key
+    key = value
+    """
+
+    let firstOutput = config.write()
+    #expect(firstOutput == expected)
+
+    let config2 = ConfigParser(options)
+    try config2.read(firstOutput)
+    let secondOutput = config2.write()
+    #expect(secondOutput == expected)
+  }
+
+  @Test func testEmptyCommentsHandling() throws {
+    let input = """
+    #
+    [section]
+    #  
+    key = value #
+    """
+
+    let options = ConfigParserOptions(preserveComments: true)
+    let config = ConfigParser(options)
+    try config.read(input)
+
+    let expected = """
+    #
+
+    [section]
+    #
+    key = value #
+    """
+
+    let output = config.write()
+    #expect(output == expected)
+  }
+
+  @Test func testMultipleConsecutiveComments() throws {
+    let input = """
+    # Comment 1
+    # Comment 2
+    # Comment 3
+    [section]
+    # Option comment 1
+    # Option comment 2
+    key = value
+    """
+
+    let options = ConfigParserOptions(preserveComments: true)
+    let config = ConfigParser(options)
+    try config.read(input)
+
+    let expected = """
+    # Comment 1
+    # Comment 2
+    # Comment 3
+
+    [section]
+    # Option comment 1
+    # Option comment 2
+    key = value
+    """
+
+    let output = config.write()
+    #expect(output == expected)
+  }
+
+  // MARK: - Comment Edge Cases
+
+  @Test func testCommentOnlyFile() throws {
+    let input = """
+    # This is only comments
+    # No actual config
+    # Just comments everywhere
+    """
+
+    let options = ConfigParserOptions(preserveComments: true)
+    let parser = try ConfigParser(input: input, options: options)
+
+    // Should only have DEFAULT section
+    #expect(parser.sectionNames.count == 1)
+    #expect(parser.hasSection("DEFAULT"))
+
+    let output = parser.write()
+    #expect(output.isEmpty || !output.contains("# This is only comments"))
+  }
+
+  @Test func testCommentsWithSpecialCharacters() throws {
+    let input = """
+    # Comment with unicode: 🚀 ñ α β
+    [section]
+    # Comment with symbols: !@#$%^&*()
+    key = value # Inline with unicode: 中文
+    """
+
+    let options = ConfigParserOptions(preserveComments: true)
+    let config = ConfigParser(options)
+    try config.read(input)
+
+    let output = config.write()
+    #expect(output.contains("🚀 ñ α β"))
+    #expect(output.contains("!@#$%^&*()"))
+    #expect(output.contains("中文"))
+  }
+
+  // MARK: - File I/O Error Tests
+
+  @Test func testWriteFileInvalidPath() {
+    let parser = ConfigParser()
+    parser["test", "key"] = INIValue(from: "value")
+
+    #expect(throws: Error.self) {
+      try parser.writeFile("/nonexistent/deeply/nested/path/that/does/not/exist/file.ini")
+    }
   }
 }

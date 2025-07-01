@@ -21,16 +21,27 @@ option = value
 
 where `# comment` is an optional comment, `[Section]` is a section header that namespaces all of its content, and `option = value` is a key-value pair. Possible value types include strings, numbers (integers and floats), and booleans. Aside from this, some semi-standardized features include supporting `=` and `:` for assignment, whitespace before and after the assignment character, and `;` and `#` for comments.
 
+## Installation
+
+Add Winnie to your project using Swift Package Manager:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/patricktcoakley/Winnie.git", from: "1.0.0")
+]
+```
+
 ## Features
 
-Winnie supports most of what ConfigParser does sans [interpolation](https://docs.python.org/3/library/configparser.html#interpolation-of-values) and more, including:
+Winnie supports most of what ConfigParser and more, including:
 
-* The ability to read and write INI configs from strings and from files with  preservation of the original insertion order.
+* The ability to read and write INI configs from strings and from files with preservation of the original insertion order.
 * The creating new configs from scratch.
 * A customizable global fallback section when setting options without an explicit section.
 * The ability to take references to sections and operate on them as if they were dictionaries.
 * Safely-typed getters with the ability to provide default values and rely on type inference.
 * Customizable section names, assignment characters, and padding for output.
+* Preserve comments when reading from an existing INI and writing it back out.
 
 ## Usage
 
@@ -38,13 +49,18 @@ Winnie supports most of what ConfigParser does sans [interpolation](https://docs
 import Winnie
 
 let input = """
+# Application configuration file
+# Version 1.0
+
 [owner]
 name = John Doe
 organization = Acme Widgets Inc.
 
+# Database connection settings
 [database]
+# Primary database server
 server = 192.0.2.62
-port = 143
+port = 143 # Standard IMAP port
 file = payroll.dat
 path = /var/database
 """
@@ -53,6 +69,7 @@ path = /var/database
 // Default section name is "DEFAULT"
 // Assignment character is "="
 // Leading and trailing spaces are both 1
+// Comment preservation is disabled
 
 let config = ConfigParser()
 
@@ -79,8 +96,8 @@ if let port = portValue?.intValue { // You can attempt to extract it using a typ
 }
 
 // Accessing a section and iterating its options and values
-if let ownerSection = config["database"] {
-    for (key, value) in ownerSection {
+if let databaseSection = config["database"] {
+    for (key, value) in databaseSection {
         print("\(key) is \(value)")
     }
 }
@@ -92,7 +109,29 @@ config["database", "path"] = "/var/databasev2" // Assigns an INIValueConvertible
 let outputString = config.write() // Returns the INI content as a String (does not throw)
 try config.writeFile("/tmp/database.ini") // Writes the INI content to a file path (throws)
 
-// Initializing with a custom default section name,assignment character, and  padding
+// Comment Preservation
+// Enable comment preservation to maintain comments when reading and writing
+let configWithComments = ConfigParser(ConfigParserOptions(preserveComments: true))
+try configWithComments.read(input)
+
+let outputWithComments = configWithComments.write()
+// outputWithComments preserves all comments from the original input:
+// # Application configuration file
+// # Version 1.0
+// 
+// [owner]
+// name = John Doe
+// organization = Acme Widgets Inc.
+//
+// # Database connection settings  
+// [database]
+// # Primary database server
+// server = 192.0.2.62
+// port = 143 # Standard IMAP port
+// file = payroll_updated.data
+// path = /var/databasev2
+
+// Initializing with a custom default section name, assignment character, and padding
 let opts = ConfigParserOptions(defaultSection: "GLOBAL", assignmentCharacter: .colon, leadingSpaces: 0, trailingSpaces: 4)
 let customConfig = ConfigParser(opts)
 try customConfig.set(option: "adminUser", value: "root") // Sets 'adminUser' in [GLOBAL] instead of the standard [DEFAULT]
@@ -106,8 +145,7 @@ let customConfigOutput = customConfig.write()
 
 ## Roadmap
 
-At this point Winnie is pretty much feature-complete, and any of the following are going to be additive and more of a wishlist of things I would like to see added at some point in the future:
+At this point Winnie is feature-complete for standard INI file operations. Future enhancements are additive and non-breaking:
 
-* It is a goal to eventually fully support more advanced INI types that Unreal Engine and others support, including arrays/lists, tuples, and structs.
-* Investigate interpolation or other kinds of templating to make it easier to batch-create configs.
-* Being able to preserve comments is currently not a goal per-se, as many similar libraries also don't do that, but it is also something I want to explore in the future as I could see it being beneficial to the end-user.
+* **Advanced INI types** - Support for arrays/lists, tuples, and structs (as used by Unreal Engine and other advanced INI implementations).
+* **Interpolation** - Variable substitution and templating features to make it easier to batch-create configs.

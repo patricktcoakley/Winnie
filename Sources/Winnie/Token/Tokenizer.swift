@@ -1,4 +1,6 @@
-public struct Tokenizer {
+struct Tokenizer {
+  // MARK: - Properties
+
   let input: String
   var line = 1
   var currentIndex: String.Index
@@ -9,12 +11,16 @@ public struct Tokenizer {
       || current == " " || current == "*" || current == "/" || current == "\\"
   }
 
+  // MARK: - Initialization
+
   init(_ input: String) {
     self.input = input
     currentIndex = self.input.startIndex
   }
 
-  public mutating func tokenize() throws(TokenizerError) -> [Token] {
+  // MARK: - Public Interface
+
+  mutating func tokenize() throws(TokenizerError) -> [Token] {
     var tokens: [Token] = []
 
     while true {
@@ -25,7 +31,9 @@ public struct Tokenizer {
     return tokens
   }
 
-  public mutating func scan() throws(TokenizerError) -> Token {
+  // MARK: - Token Scanning
+
+  mutating func scan() throws(TokenizerError) -> Token {
     skipWhitespace()
 
     guard currentIndex < input.endIndex else { return .eof }
@@ -59,6 +67,8 @@ public struct Tokenizer {
     }
   }
 
+  // MARK: - Private Helpers
+
   private mutating func advance() {
     if current == "\n" { line += 1 }
     currentIndex = input.index(after: currentIndex)
@@ -69,6 +79,8 @@ public struct Tokenizer {
       advance()
     }
   }
+
+  // MARK: - String Handlers
 
   private mutating func handleQuotedString() throws(TokenizerError) -> Token {
     var stringValue = ""
@@ -121,6 +133,8 @@ public struct Tokenizer {
     let value = input[start ..< currentIndex]
     return .string(String(value).trimmingCharacters(in: .whitespaces))
   }
+
+  // MARK: - Special Token Handlers
 
   private mutating func handleComment() -> Token {
     let start = currentIndex
