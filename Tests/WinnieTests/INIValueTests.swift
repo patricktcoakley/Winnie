@@ -168,7 +168,7 @@ struct INIValueTests {
     #expect(negInfValue == .double(-.infinity))
 
     let nanValue = INIValue(from: "nan")
-    if case let .double(nan) = nanValue {
+    if case .double(let nan) = nanValue {
       #expect(nan.isNaN)
     } else {
       #expect(Bool(false), "Expected NaN double value")

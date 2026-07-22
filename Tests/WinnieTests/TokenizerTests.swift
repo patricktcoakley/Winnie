@@ -1,4 +1,5 @@
 import Testing
+
 @testable import Winnie
 
 struct TokenizerTests {
@@ -46,15 +47,15 @@ struct TokenizerTests {
   @Test func testUnterminatedSection() throws {
     var tokenizer = Tokenizer("[section")
     #expect(throws: TokenizerError.unterminatedSection(line: 1)) {
-      _ = try tokenizer.tokenize() // Or scan() depending on how deep you test
+      _ = try tokenizer.tokenize()  // Or scan() depending on how deep you test
     }
   }
 
   @Test func testUnterminatedStringMultiLine() throws {
     let input = """
-    key = value
-    key2 = "Unfinished
-    """
+      key = value
+      key2 = "Unfinished
+      """
     var tokenizer = Tokenizer(input)
     #expect(throws: TokenizerError.unterminatedString(line: 2)) {
       _ = try tokenizer.tokenize()
@@ -63,9 +64,9 @@ struct TokenizerTests {
 
   @Test func testUnterminatedSectionMultiLine() throws {
     let input = """
-    key = value
-    [section
-    """
+      key = value
+      [section
+      """
     var tokenizer = Tokenizer(input)
     #expect(throws: TokenizerError.unterminatedSection(line: 2)) {
       _ = try tokenizer.tokenize()
@@ -103,9 +104,9 @@ struct TokenizerTests {
 
   @Test func testInlineComments() throws {
     let input = """
-    key1=value1;comment1
-    key2 = value2 # comment2
-    """
+      key1=value1;comment1
+      key2 = value2 # comment2
+      """
     var tokenizer = Tokenizer(input)
     let tokens = try tokenizer.tokenize()
     let expected: [Token] = [
@@ -151,9 +152,9 @@ struct TokenizerTests {
 
   @Test func testConsecutiveSections() throws {
     let input = """
-    [section1]
-    [section2]
-    """
+      [section1]
+      [section2]
+      """
 
     var tokenizer = Tokenizer(input)
     let tokens = try tokenizer.tokenize()
@@ -172,21 +173,21 @@ struct TokenizerTests {
 
   @Test func testSections() throws {
     let input = #"""
-    # Global settings
-    [general]
-    app_name = "TestApp"
-    version = "1.0.0"
-    debug = true
+      # Global settings
+      [general]
+      app_name = "TestApp"
+      version = "1.0.0"
+      debug = true
 
-    ; User config
-    [user]
-    name = "Jane Doe"
-    email = "jane@example.com"
+      ; User config
+      [user]
+      name = "Jane Doe"
+      email = "jane@example.com"
 
-    [network]
-    host = "localhost"
-    port = "8080"
-    """#
+      [network]
+      host = "localhost"
+      port = "8080"
+      """#
 
     let expected: [Token] = [
       .comment("# Global settings"), .newline,
@@ -214,10 +215,10 @@ struct TokenizerTests {
 
   @Test func testEmptyOption() throws {
     let contents = """
-    [URL]
-    Protocol=deusex
-    Host=
-    """
+      [URL]
+      Protocol=deusex
+      Host=
+      """
 
     let expected: [Token] = [
       .section("URL"), .newline,
@@ -233,10 +234,10 @@ struct TokenizerTests {
 
   @Test func testNewlineCharacters() throws {
     let input = """
-    key1 = value1
+      key1 = value1
 
-    key2 = value2
-    """
+      key2 = value2
+      """
 
     var tokenizer = Tokenizer(input)
     let tokens = try tokenizer.tokenize()
@@ -254,13 +255,13 @@ struct TokenizerTests {
 
   @Test func testMixedContent() throws {
     let input = """
-    [section1]
-    key1 = value1
+      [section1]
+      key1 = value1
 
-    # Comment
-    [section2]
-    key2:value2
-    """
+      # Comment
+      [section2]
+      key2:value2
+      """
 
     var tokenizer = Tokenizer(input)
     let tokens = try tokenizer.tokenize()
@@ -273,6 +274,56 @@ struct TokenizerTests {
       .section("section2"), .newline,
       .string("key2"), .colon, .string("value2"),
       .eof,
+    ]
+
+    #expect(tokens == expected)
+  }
+
+  // MARK: - Assignment Character Edge Cases (Regression Tests)
+
+  @Test func testValueContainingColonIsNotSplit() throws {
+    let input = #"path = C:\Users\test"#
+    var tokenizer = Tokenizer(input)
+    let tokens = try tokenizer.tokenize()
+
+    let expected: [Token] = [
+      .string("path"), .equals, .string(#"C:\Users\test"#), .eof,
+    ]
+
+    #expect(tokens == expected)
+  }
+
+  @Test func testValueContainingURLIsNotSplit() throws {
+    let input = "url = http://example.com/a/b"
+    var tokenizer = Tokenizer(input)
+    let tokens = try tokenizer.tokenize()
+
+    let expected: [Token] = [
+      .string("url"), .equals, .string("http://example.com/a/b"), .eof,
+    ]
+
+    #expect(tokens == expected)
+  }
+
+  @Test func testValueContainingEqualsSignIsNotSplit() throws {
+    let input = "note = a=b"
+    var tokenizer = Tokenizer(input)
+    let tokens = try tokenizer.tokenize()
+
+    let expected: [Token] = [
+      .string("note"), .equals, .string("a=b"), .eof,
+    ]
+
+    #expect(tokens == expected)
+  }
+
+  @Test func testColonAssignmentStillSplitsOnlyFirstColon() throws {
+    let input = "time: 12:30:00"
+    var tokenizer = Tokenizer(input)
+    let tokens = try tokenizer.tokenize()
+
+    let expected: [Token] = [
+      .string("time"), .colon, .string("12:30:00"), .eof,
     ]
 
     #expect(tokens == expected)

@@ -18,10 +18,10 @@ struct ConfigParserTests {
     let tempFile = tempDirectory.appendingPathComponent("test_init.ini")
 
     let content = """
-    [test]
-    value = 42
-    flag = true
-    """
+      [test]
+      value = 42
+      flag = true
+      """
 
     try content.write(to: tempFile, atomically: true, encoding: .utf8)
     defer { try? fileManager.removeItem(at: tempFile) }
@@ -33,10 +33,10 @@ struct ConfigParserTests {
 
   @Test func testInitFromString() throws {
     let content = """
-    [test]
-    value = hello world
-    number = 99
-    """
+      [test]
+      value = hello world
+      number = 99
+      """
 
     let parser = try ConfigParser(input: content, options: ConfigParserOptions())
     #expect(try parser.getString(section: "test", option: "value") == "hello world")
@@ -51,9 +51,9 @@ struct ConfigParserTests {
 
   @Test func testInitStringWithMalformedContent() throws {
     let malformed = """
-    [unclosed section
-    key = value
-    """
+      [unclosed section
+      key = value
+      """
 
     #expect(throws: Error.self) {
       try ConfigParser(input: malformed, options: ConfigParserOptions())
@@ -123,46 +123,51 @@ struct ConfigParserTests {
 
   @Test func testGetBoolSimpleSuccess() throws {
     let parser = ConfigParser()
-    try parser.read(#"""
-    [test]
-    flag = yes
-    """#)
+    try parser.read(
+      #"""
+      [test]
+      flag = yes
+      """#)
     #expect(try parser.getBool(section: "test", option: "flag") == true)
   }
 
   @Test func testGetStringSimpleSuccess() throws {
     let parser = ConfigParser()
-    try parser.read(#"""
-    [test]
-    message = hello world
-    """#)
+    try parser.read(
+      #"""
+      [test]
+      message = hello world
+      """#)
     #expect(try parser.getString(section: "test", option: "message") == "hello world")
   }
 
   @Test func testGetIntSimpleSuccess() throws {
     let parser = ConfigParser()
-    try parser.read(#"""
-    [test]
-    count = 99
-    """#)
+    try parser.read(
+      #"""
+      [test]
+      count = 99
+      """#)
     #expect(try parser.getInt(section: "test", option: "count") == 99)
   }
 
   @Test func testGetDoubleSimpleSuccess() throws {
     let parser = ConfigParser()
-    try parser.read(#"""
-    [test]
-    pi = 3.14159
-    """#)
+    try parser.read(
+      #"""
+      [test]
+      pi = 3.14159
+      """#)
     #expect(try parser.getDouble(section: "test", option: "pi") == 3.14159)
   }
 
   @Test func testGetBoolSimpleTypeError() throws {
     let parser = ConfigParser()
-    try parser.read(#"""
-    [test]
-    message = hello world
-    """#)
+    try parser.read(
+      #"""
+      [test]
+      message = hello world
+      """#)
     #expect(throws: ConfigParserError.valueError("Cannot convert to Bool: hello world")) {
       try parser.getBool(section: "test", option: "message")
     }
@@ -170,10 +175,11 @@ struct ConfigParserTests {
 
   @Test func testGetIntSimpleTypeError() throws {
     let parser = ConfigParser()
-    try parser.read(#"""
-    [test]
-    flag = yes
-    """#)
+    try parser.read(
+      #"""
+      [test]
+      flag = yes
+      """#)
     #expect(throws: ConfigParserError.valueError("Cannot convert to Int: yes")) {
       try parser.getInt(section: "test", option: "flag")
     }
@@ -181,10 +187,11 @@ struct ConfigParserTests {
 
   @Test func testGetSimpleMissingOption() throws {
     let parser = ConfigParser()
-    try parser.read(#"""
-    [test]
-    count = 99
-    """#)
+    try parser.read(
+      #"""
+      [test]
+      count = 99
+      """#)
     #expect(throws: ConfigParserError.optionNotFound("missing")) {
       try parser.getInt(section: "test", option: "missing")
     }
@@ -192,10 +199,11 @@ struct ConfigParserTests {
 
   @Test func testGetSimpleMissingSection() throws {
     let parser = ConfigParser()
-    try parser.read(#"""
-    [other_test]
-    count = 99
-    """#)
+    try parser.read(
+      #"""
+      [other_test]
+      count = 99
+      """#)
     #expect(throws: ConfigParserError.sectionNotFound("test")) {
       try parser.getInt(section: "test", option: "count")
     }
@@ -203,19 +211,21 @@ struct ConfigParserTests {
 
   @Test func testGetIntAsString() throws {
     let parser = ConfigParser()
-    try parser.read(#"""
-    [data]
-    value = 123
-    """#)
+    try parser.read(
+      #"""
+      [data]
+      value = 123
+      """#)
     #expect(try parser.getString(section: "data", option: "value") == "123")
   }
 
   @Test func testGetBoolAsString() throws {
     let parser = ConfigParser()
-    try parser.read(#"""
-    [data]
-    value = True
-    """#)
+    try parser.read(
+      #"""
+      [data]
+      value = True
+      """#)
     #expect(try parser.getString(section: "data", option: "value") == "True")
   }
 
@@ -356,22 +366,22 @@ struct ConfigParserTests {
 
   @Test func readExample() throws {
     let contents = """
-    [URL]
-    Protocol=deusex
-    ProtocolDescription=Deus Ex Protocol
-    Name=Player
-    Map=Index.dx
-    LocalMap=DX.dx
-    Host=
-    Portal=
-    MapExt=dx
-    SaveExt=dxs
-    Port=7790
-    Class=DeusEx.JCDentonMale
+      [URL]
+      Protocol=deusex
+      ProtocolDescription=Deus Ex Protocol
+      Name=Player
+      Map=Index.dx
+      LocalMap=DX.dx
+      Host=
+      Portal=
+      MapExt=dx
+      SaveExt=dxs
+      Port=7790
+      Class=DeusEx.JCDentonMale
 
-    [Engine.GameInfo]
-    bLowGore=False
-    """
+      [Engine.GameInfo]
+      bLowGore=False
+      """
 
     let parser = ConfigParser()
     try parser.read(contents)
@@ -401,25 +411,25 @@ struct ConfigParserTests {
     let result = parser.write()
 
     let expected = """
-    [URL]
-    Protocol=deusex
-    Name=Player
-    Port=7790
+      [URL]
+      Protocol=deusex
+      Name=Player
+      Port=7790
 
-    [Engine.GameInfo]
-    bLowGore=False
-    """
+      [Engine.GameInfo]
+      bLowGore=False
+      """
 
     #expect(result == expected)
   }
 
   @Test func testMixedAssignmentStyles() throws {
     let input = """
-    [Settings]
-    useColor=true
-    fontSize: 12
-    theme = "dark"
-    """
+      [Settings]
+      useColor=true
+      fontSize: 12
+      theme = "dark"
+      """
 
     let parser = ConfigParser()
     try parser.read(input)
@@ -472,11 +482,11 @@ struct ConfigParserTests {
 
   @Test func testEmptySections() throws {
     let input = """
-    [EmptySection]
+      [EmptySection]
 
-    [Section]
-    emptyValue=
-    """
+      [Section]
+      emptyValue=
+      """
 
     let parser = ConfigParser()
     try parser.read(input)
@@ -513,7 +523,8 @@ struct ConfigParserTests {
 
   @Test func testIntegerOverflow() {
     let parser = ConfigParser()
-    parser["test", "big"] = INIValue(from: "999999999999999999999") // Large number that won't parse as Int
+    // Large number that won't parse as Int
+    parser["test", "big"] = INIValue(from: "999999999999999999999")
 
     #expect(throws: ConfigParserError.self) {
       try parser.getInt(section: "test", option: "big")
@@ -550,12 +561,12 @@ struct ConfigParserTests {
 
   @Test func testCommentHandling() throws {
     let input = """
-    [Section]
-    # This is a comment
-    key1=value1 ; This is an inline comment
-    ; Another comment
-    key2=value2
-    """
+      [Section]
+      # This is a comment
+      key1=value1 ; This is an inline comment
+      ; Another comment
+      key2=value2
+      """
 
     let parser = ConfigParser()
     try parser.read(input)
@@ -569,13 +580,13 @@ struct ConfigParserTests {
 
   @Test func testRoundtrip() throws {
     let original = """
-    [Section1]
-    key1=value1
-    key2=True
+      [Section1]
+      key1=value1
+      key2=True
 
-    [Section2]
-    key3=42
-    """
+      [Section2]
+      key3=42
+      """
 
     let opts = ConfigParserOptions(leadingSpaces: 0, trailingSpaces: 0)
     let parser1 = ConfigParser(opts)
@@ -597,19 +608,19 @@ struct ConfigParserTests {
 
   @Test func testEndToEnd() throws {
     let expected = """
-    [DEFAULT]
-    ServerAliveInterval = 45
-    Compression = yes
-    CompressionLevel = 9
-    ForwardX11 = yes
+      [DEFAULT]
+      ServerAliveInterval = 45
+      Compression = yes
+      CompressionLevel = 9
+      ForwardX11 = yes
 
-    [forge.example]
-    User = hg
+      [forge.example]
+      User = hg
 
-    [topsecret.server.example]
-    Port = 50022
-    ForwardX11 = no
-    """
+      [topsecret.server.example]
+      Port = 50022
+      ForwardX11 = no
+      """
 
     let parser = ConfigParser()
     try parser.set(option: "ServerAliveInterval", value: 45)
@@ -643,19 +654,19 @@ struct ConfigParserTests {
 
   @Test func testEndToEndSubscript() throws {
     let expected = """
-    [DEFAULT]
-    ServerAliveInterval = 45
-    Compression = yes
-    CompressionLevel = 9
-    ForwardX11 = yes
+      [DEFAULT]
+      ServerAliveInterval = 45
+      Compression = yes
+      CompressionLevel = 9
+      ForwardX11 = yes
 
-    [forge.example]
-    User = hg
+      [forge.example]
+      User = hg
 
-    [topsecret.server.example]
-    Port = 50022
-    ForwardX11 = no
-    """
+      [topsecret.server.example]
+      Port = 50022
+      ForwardX11 = no
+      """
 
     let parser = ConfigParser()
 
@@ -690,16 +701,16 @@ struct ConfigParserTests {
 
   @Test func readmeExample() async throws {
     let input = """
-    [owner]
-    name = John Doe
-    organization = Acme Widgets Inc.
+      [owner]
+      name = John Doe
+      organization = Acme Widgets Inc.
 
-    [database]
-    server = 192.0.2.62
-    port = 143
-    file = payroll.dat
-    path = /var/database
-    """
+      [database]
+      server = 192.0.2.62
+      port = 143
+      file = payroll.dat
+      path = /var/database
+      """
 
     let config = ConfigParser()
 
@@ -732,7 +743,8 @@ struct ConfigParserTests {
     let tempDirectoryURL = fileManager.temporaryDirectory
       .appendingPathComponent("WinnieTests-\(UUID().uuidString)", isDirectory: true)
 
-    try fileManager.createDirectory(at: tempDirectoryURL, withIntermediateDirectories: true, attributes: nil)
+    try fileManager.createDirectory(
+      at: tempDirectoryURL, withIntermediateDirectories: true, attributes: nil)
     defer {
       try? fileManager.removeItem(at: tempDirectoryURL)
     }
@@ -759,16 +771,16 @@ struct ConfigParserTests {
     #expect(portFromFileValue?.intValue == 143)
 
     let expectedOutput = """
-    [owner]
-    name = John Doe
-    organization = Acme Widgets Inc.
+      [owner]
+      name = John Doe
+      organization = Acme Widgets Inc.
 
-    [database]
-    server = 192.0.2.62
-    port = 143
-    file = payroll_updated.data
-    path = /var/databasev2
-    """
+      [database]
+      server = 192.0.2.62
+      port = 143
+      file = payroll_updated.data
+      path = /var/databasev2
+      """
 
     let outputString = config.write()
     #expect(outputString == expectedOutput)
@@ -803,10 +815,10 @@ struct ConfigParserTests {
 
     let output = parser.write()
     let expected = """
-    [Test]
-    key1    =    value1
-    key2    =    42
-    """
+      [Test]
+      key1    =    value1
+      key2    =    42
+      """
 
     #expect(output == expected)
   }
@@ -821,10 +833,10 @@ struct ConfigParserTests {
 
     let output = parser.write()
     let expected = """
-    [Test]
-    enabled = yes
-    debug = no
-    """
+      [Test]
+      enabled = yes
+      debug = no
+      """
 
     #expect(output == expected)
   }
@@ -839,10 +851,10 @@ struct ConfigParserTests {
 
     let output = parser.write()
     let expected = """
-    [Test]
-    key1=value1
-    key2=42
-    """
+      [Test]
+      key1=value1
+      key2=42
+      """
 
     #expect(output == expected)
   }
@@ -857,10 +869,10 @@ struct ConfigParserTests {
 
     let output = parser.write()
     let expected = """
-    [Test]
-    key1: value1
-    key2: 42
-    """
+      [Test]
+      key1: value1
+      key2: 42
+      """
 
     #expect(output == expected)
   }
@@ -911,20 +923,20 @@ struct ConfigParserTests {
 
   @Test func testHeaderComments() throws {
     let input = """
-    # This is a header comment
-    # Another header comment
+      # This is a header comment
+      # Another header comment
 
-    [section]
-    key = value
-    """
+      [section]
+      key = value
+      """
 
     let expected = """
-    # This is a header comment
-    # Another header comment
+      # This is a header comment
+      # Another header comment
 
-    [section]
-    key = value
-    """
+      [section]
+      key = value
+      """
 
     let options = ConfigParserOptions(preserveComments: true)
     let config = ConfigParser(options)
@@ -936,24 +948,24 @@ struct ConfigParserTests {
 
   @Test func testCommentsBeforeSection() throws {
     let input = """
-    [DEFAULT]
-    default_key = default_value
+      [DEFAULT]
+      default_key = default_value
 
-    # Comment before database section
-    # Another comment
-    [database]
-    host = localhost
-    """
+      # Comment before database section
+      # Another comment
+      [database]
+      host = localhost
+      """
 
     let expected = """
-    [DEFAULT]
-    default_key = default_value
+      [DEFAULT]
+      default_key = default_value
 
-    # Comment before database section
-    # Another comment
-    [database]
-    host = localhost
-    """
+      # Comment before database section
+      # Another comment
+      [database]
+      host = localhost
+      """
 
     let options = ConfigParserOptions(preserveComments: true)
     let config = ConfigParser(options)
@@ -965,24 +977,24 @@ struct ConfigParserTests {
 
   @Test func testCommentsBeforeOption() throws {
     let input = """
-    [database]
-    # Comment before host option
-    host = localhost
-    # Comment before port option  
-    port = 5432
-    """
+      [database]
+      # Comment before host option
+      host = localhost
+      # Comment before port option  
+      port = 5432
+      """
 
     let options = ConfigParserOptions(preserveComments: true)
     let config = ConfigParser(options)
     try config.read(input)
 
     let expected = """
-    [database]
-    # Comment before host option
-    host = localhost
-    # Comment before port option
-    port = 5432
-    """
+      [database]
+      # Comment before host option
+      host = localhost
+      # Comment before port option
+      port = 5432
+      """
 
     let output = config.write()
     #expect(output == expected)
@@ -990,20 +1002,20 @@ struct ConfigParserTests {
 
   @Test func testInlineComments() throws {
     let input = """
-    [database]
-    host = localhost # inline comment
-    port = 5432 ; semicolon comment
-    """
+      [database]
+      host = localhost # inline comment
+      port = 5432 ; semicolon comment
+      """
 
     let options = ConfigParserOptions(preserveComments: true)
     let config = ConfigParser(options)
     try config.read(input)
 
     let expected = """
-    [database]
-    host = localhost # inline comment
-    port = 5432 ; semicolon comment
-    """
+      [database]
+      host = localhost # inline comment
+      port = 5432 ; semicolon comment
+      """
 
     let output = config.write()
     #expect(output == expected)
@@ -1011,38 +1023,38 @@ struct ConfigParserTests {
 
   @Test func testMixedCommentTypes() throws {
     let input = """
-    # File header comment
+      # File header comment
 
-    # Comment before DEFAULT section
-    [DEFAULT]
-    # Comment before default option
-    log_level = INFO # inline comment
+      # Comment before DEFAULT section
+      [DEFAULT]
+      # Comment before default option
+      log_level = INFO # inline comment
 
-    # Comment before section
-    [database]
-    # Comment before host
-    host = localhost
-    port = 5432 # port comment
-    """
+      # Comment before section
+      [database]
+      # Comment before host
+      host = localhost
+      port = 5432 # port comment
+      """
 
     let options = ConfigParserOptions(preserveComments: true)
     let config = ConfigParser(options)
     try config.read(input)
 
     let expected = """
-    # File header comment
-    # Comment before DEFAULT section
+      # File header comment
+      # Comment before DEFAULT section
 
-    [DEFAULT]
-    # Comment before default option
-    log_level = INFO # inline comment
+      [DEFAULT]
+      # Comment before default option
+      log_level = INFO # inline comment
 
-    # Comment before section
-    [database]
-    # Comment before host
-    host = localhost
-    port = 5432 # port comment
-    """
+      # Comment before section
+      [database]
+      # Comment before host
+      host = localhost
+      port = 5432 # port comment
+      """
 
     let output = config.write()
     #expect(output == expected)
@@ -1050,20 +1062,20 @@ struct ConfigParserTests {
 
   @Test func testCommentPreservationDisabled() throws {
     let input = """
-    # This comment should be ignored
-    [section]
-    # This too
-    key = value # and this
-    """
+      # This comment should be ignored
+      [section]
+      # This too
+      key = value # and this
+      """
 
     let options = ConfigParserOptions(preserveComments: false)
     let config = ConfigParser(options)
     try config.read(input)
 
     let expected = """
-    [section]
-    key = value
-    """
+      [section]
+      key = value
+      """
 
     let output = config.write()
     #expect(output == expected)
@@ -1071,36 +1083,36 @@ struct ConfigParserTests {
 
   @Test func testRoundtripCommentPreservation() throws {
     let input = """
-    # Header comment
+      # Header comment
 
-    # Before DEFAULT
-    [DEFAULT]
-    # Before global option
-    global = value # inline
+      # Before DEFAULT
+      [DEFAULT]
+      # Before global option
+      global = value # inline
 
-    # Before section
-    [test]
-    # Before key
-    key = value
-    """
+      # Before section
+      [test]
+      # Before key
+      key = value
+      """
 
     let options = ConfigParserOptions(preserveComments: true)
     let config = ConfigParser(options)
     try config.read(input)
 
     let expected = """
-    # Header comment
-    # Before DEFAULT
+      # Header comment
+      # Before DEFAULT
 
-    [DEFAULT]
-    # Before global option
-    global = value # inline
+      [DEFAULT]
+      # Before global option
+      global = value # inline
 
-    # Before section
-    [test]
-    # Before key
-    key = value
-    """
+      # Before section
+      [test]
+      # Before key
+      key = value
+      """
 
     let firstOutput = config.write()
     #expect(firstOutput == expected)
@@ -1113,23 +1125,23 @@ struct ConfigParserTests {
 
   @Test func testEmptyCommentsHandling() throws {
     let input = """
-    #
-    [section]
-    #  
-    key = value #
-    """
+      #
+      [section]
+      #  
+      key = value #
+      """
 
     let options = ConfigParserOptions(preserveComments: true)
     let config = ConfigParser(options)
     try config.read(input)
 
     let expected = """
-    #
+      #
 
-    [section]
-    #
-    key = value #
-    """
+      [section]
+      #
+      key = value #
+      """
 
     let output = config.write()
     #expect(output == expected)
@@ -1137,29 +1149,29 @@ struct ConfigParserTests {
 
   @Test func testMultipleConsecutiveComments() throws {
     let input = """
-    # Comment 1
-    # Comment 2
-    # Comment 3
-    [section]
-    # Option comment 1
-    # Option comment 2
-    key = value
-    """
+      # Comment 1
+      # Comment 2
+      # Comment 3
+      [section]
+      # Option comment 1
+      # Option comment 2
+      key = value
+      """
 
     let options = ConfigParserOptions(preserveComments: true)
     let config = ConfigParser(options)
     try config.read(input)
 
     let expected = """
-    # Comment 1
-    # Comment 2
-    # Comment 3
+      # Comment 1
+      # Comment 2
+      # Comment 3
 
-    [section]
-    # Option comment 1
-    # Option comment 2
-    key = value
-    """
+      [section]
+      # Option comment 1
+      # Option comment 2
+      key = value
+      """
 
     let output = config.write()
     #expect(output == expected)
@@ -1169,10 +1181,10 @@ struct ConfigParserTests {
 
   @Test func testCommentOnlyFile() throws {
     let input = """
-    # This is only comments
-    # No actual config
-    # Just comments everywhere
-    """
+      # This is only comments
+      # No actual config
+      # Just comments everywhere
+      """
 
     let options = ConfigParserOptions(preserveComments: true)
     let parser = try ConfigParser(input: input, options: options)
@@ -1187,11 +1199,11 @@ struct ConfigParserTests {
 
   @Test func testCommentsWithSpecialCharacters() throws {
     let input = """
-    # Comment with unicode: 🚀 ñ α β
-    [section]
-    # Comment with symbols: !@#$%^&*()
-    key = value # Inline with unicode: 中文
-    """
+      # Comment with unicode: 🚀 ñ α β
+      [section]
+      # Comment with symbols: !@#$%^&*()
+      key = value # Inline with unicode: 中文
+      """
 
     let options = ConfigParserOptions(preserveComments: true)
     let config = ConfigParser(options)
@@ -1212,5 +1224,54 @@ struct ConfigParserTests {
     #expect(throws: Error.self) {
       try parser.writeFile("/nonexistent/deeply/nested/path/that/does/not/exist/file.ini")
     }
+  }
+
+  // MARK: - Regression Tests
+
+  @Test func testDuplicateSectionHeaderThrows() throws {
+    let parser = ConfigParser()
+
+    #expect(throws: ConfigParserError.duplicateSection("a")) {
+      try parser.read(
+        #"""
+        [a]
+        x = 1
+        [b]
+        y = 2
+        [a]
+        z = 3
+        """#)
+    }
+  }
+
+  @Test func testTypedGetterFallsBackToDefaultSection() throws {
+    let parser = ConfigParser()
+    try parser.set(option: "compression", value: "yes")
+    try parser.addSection("forge.example")
+
+    #expect(try parser.getString(section: "forge.example", option: "compression") == "yes")
+    #expect(try parser.get(section: "forge.example", option: "compression") == "yes")
+  }
+
+  @Test func testReadValueContainingWindowsPath() throws {
+    let parser = ConfigParser()
+    try parser.read(
+      #"""
+      [test]
+      path = C:\Users\test
+      """#)
+
+    #expect(try parser.getString(section: "test", option: "path") == #"C:\Users\test"#)
+  }
+
+  @Test func testReadValueContainingURL() throws {
+    let parser = ConfigParser()
+    try parser.read(
+      """
+      [test]
+      url = http://example.com/a/b
+      """)
+
+    #expect(try parser.getString(section: "test", option: "url") == "http://example.com/a/b")
   }
 }

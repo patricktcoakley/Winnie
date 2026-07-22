@@ -45,7 +45,9 @@ public struct Config {
     comments.addBeforeSectionComments(commentList, for: section)
   }
 
-  mutating func addBeforeOptionComments(_ commentList: [String], for option: String, in section: String) {
+  mutating func addBeforeOptionComments(
+    _ commentList: [String], for option: String, in section: String
+  ) {
     comments.addBeforeOptionComments(commentList, for: option, in: section)
   }
 
@@ -96,7 +98,9 @@ public struct Config {
         output += "\(option)\(assignment)\(value.description(booleanFormat: options.booleanFormat))"
 
         // Inline comment
-        if options.preserveComments, let inlineComment = comments.inlineComment(for: option, in: options.defaultSection) {
+        if options.preserveComments,
+          let inlineComment = comments.inlineComment(for: option, in: options.defaultSection)
+        {
           output += " \(inlineComment)"
         }
 
@@ -128,10 +132,13 @@ public struct Config {
             }
           }
 
-          output += "\(option)\(assignment)\(value.description(booleanFormat: options.booleanFormat))"
+          output +=
+            "\(option)\(assignment)\(value.description(booleanFormat: options.booleanFormat))"
 
           // Inline comment
-          if options.preserveComments, let inlineComment = comments.inlineComment(for: option, in: sectionName) {
+          if options.preserveComments,
+            let inlineComment = comments.inlineComment(for: option, in: sectionName)
+          {
             output += " \(inlineComment)"
           }
 
@@ -171,7 +178,9 @@ public struct Config {
       storage[.section(section)] = combined
     }
 
-    mutating func addBeforeOptionComments(_ commentList: [String], for option: String, in section: String) {
+    mutating func addBeforeOptionComments(
+      _ commentList: [String], for option: String, in section: String
+    ) {
       let combined = commentList.joined(separator: "\n")
       storage[.option(section: section, option: option)] = combined
     }

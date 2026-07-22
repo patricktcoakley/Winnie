@@ -151,20 +151,29 @@ public final class ConfigParser {
     throw .sectionNotFound(section)
   }
 
-  public func get<T: INIValueConvertible>(section: String, option: String) throws(ConfigParserError) -> T {
-    if let section = config[section] {
-      guard let value = section[option] else { throw .optionNotFound(option) }
+  public func get<T: INIValueConvertible>(section: String, option: String)
+    throws(ConfigParserError) -> T
+  {
+    guard let sectionValues = config[section] else { throw .sectionNotFound(section) }
+
+    if let value = sectionValues[option] {
       return try T.from(value)
     }
 
-    throw .sectionNotFound(section)
+    if section != options.defaultSection, let value = config[options.defaultSection]?[option] {
+      return try T.from(value)
+    }
+
+    throw .optionNotFound(option)
   }
 
   public func get<T: INIValueConvertible>(option: String) throws(ConfigParserError) -> T {
     try get(section: options.defaultSection, option: option)
   }
 
-  public func get<T: INIValueConvertible>(section: String, option: String, default defaultValue: T) -> T {
+  public func get<T: INIValueConvertible>(
+    section: String, option: String, default defaultValue: T
+  ) -> T {
     (try? get(section: section, option: option)) ?? defaultValue
   }
 
@@ -192,7 +201,9 @@ public final class ConfigParser {
 
   // MARK: - Value Setting
 
-  public func set(section: String, option: String, value: some INIValueConvertible) throws(ConfigParserError) {
+  public func set(section: String, option: String, value: some INIValueConvertible)
+    throws(ConfigParserError)
+  {
     if config[section] == nil {
       throw ConfigParserError.sectionNotFound(section)
     }
@@ -249,11 +260,11 @@ public final class ConfigParser {
       let token = tokens[index]
 
       switch token {
-      case let .comment(comment):
+      case .comment(let comment):
         commentBuffer.append(comment)
         index = tokens.index(after: index)
 
-      case let .section(section):
+      case .section(let section):
         if !hasSeenSection, !commentBuffer.isEmpty {
           for comment in commentBuffer {
             newConfig.addHeaderComment(comment)
@@ -265,13 +276,18 @@ public final class ConfigParser {
         hasSeenSection = true
         currentSection = section
         if currentSection != options.defaultSection {
+          guard newConfig[currentSection] == nil else {
+            throw ConfigParserError.duplicateSection(currentSection)
+          }
           newConfig[currentSection] = [:]
         }
         index = tokens.index(after: index)
 
-      case let .string(option):
+      case .string(let option):
         if !commentBuffer.isEmpty, options.preserveComments {
-          newConfig.addBeforeOptionComments(commentBuffer, for: option, in: currentSection)
+          newConfig.addBeforeOptionComments(
+            commentBuffer, for: option, in: currentSection
+          )
         }
         commentBuffer = []
         index = tokens.index(after: index)
@@ -279,11 +295,12 @@ public final class ConfigParser {
         if index < tokens.endIndex, isAssignmentToken(tokens[index]) {
           index = tokens.index(after: index)
 
-          let value = if index < tokens.endIndex, case let .string(string) = tokens[index] {
-            string.trimmingCharacters(in: .whitespacesAndNewlines)
-          } else {
-            ""
-          }
+          let value =
+            if index < tokens.endIndex, case .string(let string) = tokens[index] {
+              string.trimmingCharacters(in: .whitespacesAndNewlines)
+            } else {
+              ""
+            }
 
           newConfig[currentSection]?[option] = value.into()
 
@@ -292,7 +309,9 @@ public final class ConfigParser {
           }
 
           // Check for inline comment after value
-          if index < tokens.endIndex, case let .comment(inlineComment) = tokens[index], options.preserveComments {
+          if index < tokens.endIndex, case .comment(let inlineComment) = tokens[index],
+            options.preserveComments
+          {
             newConfig.addInlineComment(inlineComment, for: option, in: currentSection)
             index = tokens.index(after: index)
           }

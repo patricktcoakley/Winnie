@@ -24,3 +24,6 @@ htmlcov/
 # DocC Documentation
 *.doccarchive
 .docc-build/
+
+.dependencies
+.derivedData

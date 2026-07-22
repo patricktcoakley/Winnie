@@ -3,7 +3,7 @@ extension String: INIValueConvertible {
 
   public static func from(_ value: INIValue) throws(ConfigParserError) -> String {
     switch value {
-    case let .string(string): string
+    case .string(let string): string
     default: value.description
     }
   }

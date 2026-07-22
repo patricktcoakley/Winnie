@@ -5,10 +5,12 @@ struct Tokenizer {
   var line = 1
   var currentIndex: String.Index
   var current: Character { input[currentIndex] }
+  private var hasSeenAssignment = false
 
   var isSupportedCharacter: Bool {
     current.isLetter || current.isNumber || current == "_" || current == "-" || current == "."
       || current == " " || current == "*" || current == "/" || current == "\\"
+      || ((current == ":" || current == "=") && hasSeenAssignment)
   }
 
   // MARK: - Initialization
@@ -41,12 +43,12 @@ struct Tokenizer {
     switch current {
     case "[":
       return try handleSection()
-    case "=":
+    case "=", ":":
+      guard !hasSeenAssignment else { return handleString() }
+      let token: Token = current == "=" ? .equals : .colon
       advance()
-      return .equals
-    case ":":
-      advance()
-      return .colon
+      hasSeenAssignment = true
+      return token
     case "+":
       advance()
       return .plus
@@ -58,6 +60,7 @@ struct Tokenizer {
     case "#", ";": return handleComment()
     case "\n":
       advance()
+      hasSeenAssignment = false
       return .newline
     default:
       guard isSupportedCharacter else {
@@ -90,7 +93,7 @@ struct Tokenizer {
     while currentIndex < input.endIndex {
       let char = current
 
-      if char == "\"" { // End quote
+      if char == "\"" {  // End quote
         advance()
         return .string(stringValue)
       }
@@ -124,13 +127,13 @@ struct Tokenizer {
 
     while currentIndex < input.endIndex {
       if !isSupportedCharacter || current == "\n" {
-        let value = input[start ..< currentIndex]
+        let value = input[start..<currentIndex]
         return .string(String(value).trimmingCharacters(in: .whitespaces))
       }
       advance()
     }
 
-    let value = input[start ..< currentIndex]
+    let value = input[start..<currentIndex]
     return .string(String(value).trimmingCharacters(in: .whitespaces))
   }
 
@@ -144,7 +147,7 @@ struct Tokenizer {
       advance()
     }
 
-    let value = input[start ..< currentIndex]
+    let value = input[start..<currentIndex]
 
     return .comment(String(value).trimmingCharacters(in: .whitespaces))
   }
@@ -172,7 +175,7 @@ struct Tokenizer {
       throw TokenizerError.unterminatedSection(line: line)
     }
 
-    let value = input[start ..< currentIndex]
+    let value = input[start..<currentIndex]
     advance()
 
     return .section(String(value))

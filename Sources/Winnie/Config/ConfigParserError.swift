@@ -8,4 +8,7 @@ public enum ConfigParserError: Error, Equatable {
 
   /// Thrown when a value cannot be converted to the requested type.
   case valueError(String)
+
+  /// Thrown when a section header appears more than once while reading a file.
+  case duplicateSection(String)
 }

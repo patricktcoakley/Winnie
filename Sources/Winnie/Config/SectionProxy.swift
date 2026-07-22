@@ -30,7 +30,7 @@ import OrderedCollections
 public struct SectionProxy {
   /// The name of the section this proxy represents.
   public let section: String
-  unowned var parser: ConfigParser
+  weak var parser: ConfigParser?
 
   init(section: String, parser: ConfigParser) {
     self.section = section
@@ -42,16 +42,16 @@ public struct SectionProxy {
   /// - Parameter option: The name of the option to access.
   /// - Returns: The `INIValue` for the option, or `nil` if the option doesn't exist.
   public subscript(option: String) -> INIValue? {
-    get { parser[section, option] }
-    set { parser[section, option] = newValue }
+    get { parser?[section, option] }
+    set { parser?[section, option] = newValue }
   }
 
   /// A collection of all option names in this section.
-  public var options: some Collection<String> { parser.config[section]?.keys ?? [] }
+  public var options: some Collection<String> { parser?.config[section]?.keys ?? [] }
 
   /// An array of all values in this section.
   public var values: [INIValue] {
-    if let valuesCollection = parser.config[section]?.values {
+    if let valuesCollection = parser?.config[section]?.values {
       return Array(valuesCollection)
     }
     return []
@@ -81,7 +81,7 @@ public struct SectionPairIterator: IteratorProtocol {
 
   public mutating func next() -> Element? {
     guard let option = optionIterator.next(),
-          let value = sectionProxy[option]
+      let value = sectionProxy[option]
     else {
       return nil
     }
@@ -115,10 +115,6 @@ public struct SectionProxySequence: Sequence {
   public typealias Iterator = SectionProxyIterator
 
   unowned let parser: ConfigParser
-
-  init(parser: ConfigParser) {
-    self.parser = parser
-  }
 
   public func makeIterator() -> Iterator { SectionProxyIterator(parser: parser) }
 }

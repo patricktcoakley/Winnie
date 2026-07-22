@@ -11,9 +11,9 @@ extension Token: CustomStringConvertible {
     case .newline: "\n"
     case .eof: "EOF"
     // Value tokens
-    case let .section(value): "[\(value)]"
-    case let .string(value): value
-    case let .comment(value): value
+    case .section(let value): "[\(value)]"
+    case .string(let value): value
+    case .comment(let value): value
     }
   }
 }

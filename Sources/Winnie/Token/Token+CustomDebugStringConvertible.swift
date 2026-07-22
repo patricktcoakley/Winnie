@@ -8,9 +8,9 @@ extension Token: CustomDebugStringConvertible {
     case .minus: "minus::<->"
     case .newline: "newline::<\n>"
     case .eof: "eof::<EOF>"
-    case let .section(value): "section::<\(value)]"
-    case let .string(value): "string::<\(value)>"
-    case let .comment(value): "comment::<\(value)>"
+    case .section(let value): "section::<\(value)]"
+    case .string(let value): "string::<\(value)>"
+    case .comment(let value): "comment::<\(value)>"
     }
   }
 }

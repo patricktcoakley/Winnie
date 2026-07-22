@@ -1,0 +1,18 @@
+[tools]
+swift = "6.3.3"
+
+[tasks.build]
+description = "Build the package"
+run = "swift build"
+
+[tasks.test]
+description = "Run the test suite"
+run = "swift test"
+
+[tasks.format]
+description = "Format Swift sources with swift-format"
+run = "swift format --in-place --parallel --recursive Sources Tests"
+
+[tasks.lint]
+description = "Lint Swift sources with swift-format"
+run = "swift format lint --strict --parallel --recursive Sources Tests"

@@ -1,4 +1,5 @@
 import Testing
+
 @testable import Winnie
 
 struct SectionProxyTests {
@@ -95,5 +96,19 @@ struct SectionProxyTests {
     } else {
       Issue.record("Expected proxy to exist")
     }
+  }
+
+  // MARK: - Lifetime Tests
+
+  @Test func sectionProxyDoesNotCrashAfterParserIsDeallocated() throws {
+    func makeOrphanedProxy() throws -> SectionProxy {
+      let parser = ConfigParser()
+      try parser.addSection("db")
+      parser["db", "host"] = "localhost"
+      return parser["db"]!
+    }
+
+    let proxy = try makeOrphanedProxy()
+    #expect(proxy["host"] == nil)
   }
 }
